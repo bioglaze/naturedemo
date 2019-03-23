@@ -5,10 +5,10 @@
 
 int main()
 {
-    constexpr unsigned width = 1280;
-    constexpr unsigned height = 720;
+    constexpr unsigned width = 1920;
+    constexpr unsigned height = 1080;
     
-    aeWindow window = aeCreateWindow( width, height, "ExperimentalEngine" );
+    aeWindow window = aeCreateWindow( width, height, "Nature Demo" );
     aeFile waterVertFile = aeLoadFile( "water_vert.spv" );
     aeFile waterFragFile = aeLoadFile( "water_frag.spv" );
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
