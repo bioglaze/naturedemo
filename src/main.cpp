@@ -3,14 +3,18 @@
 #include "shader.hpp"
 #include "window.hpp"
 
+void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
+
 int main()
 {
     constexpr unsigned width = 1920;
     constexpr unsigned height = 1080;
     
     aeWindow window = aeCreateWindow( width, height, "Nature Demo" );
-    aeFile waterVertFile = aeLoadFile( "water_vert.spv" );
-    aeFile waterFragFile = aeLoadFile( "water_frag.spv" );
+    aeInitRenderer( width, height, window.connection, window.window );
+    
+    aeFile waterVertFile = aeLoadFile( "water_vs.spv" );
+    aeFile waterFragFile = aeLoadFile( "water_fs.spv" );
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     
     if (window.index == -1)

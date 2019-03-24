@@ -4,8 +4,8 @@ DEFINES := -DVK_USE_PLATFORM_XCB_KHR
 CC := clang++-6.0
 SANITIZERS := -g -fsanitize=address,undefined
 
-SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e unlitVS water.hlsl -o water_vs.spv)"; echo $$SHADER
-SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S frag -e unlitFS water.hlsl -o water_fs.spv)"; echo $$SHADER
+SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e unlitVS water.hlsl -o ../build/water_vs.spv)"; echo $$SHADER
+SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S frag -e unlitFS water.hlsl -o ../build/water_fs.spv)"; echo $$SHADER
 
 all:
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c renderer_vulkan.cpp -o renderer_vulkan.o
