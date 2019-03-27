@@ -27,7 +27,7 @@ struct VSOutput
     float2 uv : TEXCOORD;
 };
 
-VSOutput unlitVS( uint vertexId : SV_VertexID )
+VSOutput waterVS( uint vertexId : SV_VertexID )
 {
     VSOutput vsOut;
     vsOut.uv = uvs[ vertexId ];
@@ -38,7 +38,7 @@ VSOutput unlitVS( uint vertexId : SV_VertexID )
     return vsOut;
 }
 
-float4 unlitFS( VSOutput vsOut ) : SV_Target
+float4 waterFS( VSOutput vsOut ) : SV_Target
 {
     return float4( 1, 0, 0, 1 );
     //return textures[ 0 ].Sample( sLinear, vsOut.uv );

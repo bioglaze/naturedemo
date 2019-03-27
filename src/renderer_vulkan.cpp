@@ -1,3 +1,6 @@
+// This is an independent project of an individual developer. Dear PVS-Studio, please check it.
+
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -295,8 +298,8 @@ static bool CreateInstance( VkInstance& outInstance )
     
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "ExperimentalEngine";
-    appInfo.pEngineName = "ExperimentalEngine";
+    appInfo.pApplicationName = "NatureDemo";
+    appInfo.pEngineName = "NatureDemo";
     appInfo.apiVersion = isVulkan11 ? VK_API_VERSION_1_1 : VK_API_VERSION_1_0;
 
     uint32_t extensionCount = 0;
