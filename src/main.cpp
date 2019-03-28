@@ -4,6 +4,8 @@
 #include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
+void aeBeginFrame();
+void aeEndFrame();
 
 int main()
 {
@@ -43,6 +45,9 @@ int main()
                 shouldQuit = true;
             }
         }
+
+        aeBeginFrame();
+        aeEndFrame();
     }
     
     return 0;
