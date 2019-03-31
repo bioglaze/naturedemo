@@ -11,6 +11,7 @@ all:
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c renderer_vulkan.cpp -o renderer_vulkan.o
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c window_xcb.cpp -o window_xcb.o
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c file.cpp -o file.o
+	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c texture.cpp -o texture.o
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c shader.cpp -o shader.o
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) main.cpp $(LINKER) -o ../build/naturedemo
 

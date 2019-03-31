@@ -61,6 +61,9 @@ VkImageView view;
 VkBufferView gPositionsView;
 VkBufferView gUVSView;
 VkPipelineLayout gPipelineLayout = VK_NULL_HANDLE;
+VkCommandBuffer gTexCommandBuffer;
+unsigned gWidth = 0;
+unsigned gHeight = 0;
 
 PFN_vkCreateSwapchainKHR createSwapchainKHR;
 PFN_vkGetSwapchainImagesKHR getSwapchainImagesKHR;
@@ -793,12 +796,64 @@ static bool CreateDevice()
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window )
 {
+    gWidth = width;
+    gHeight = height;
+
     CreateInstance( gInstance );
     CreateDevice();
     LoadFunctionPointers();
     CreateCommandBuffers();
     CreateSwapchain( width, height, 1, connection, window );
     CreateRenderPassMSAA();
+
+    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+    commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    commandBufferAllocateInfo.commandPool = gCmdPool;
+    commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    commandBufferAllocateInfo.commandBufferCount = 1;
+
+    VK_CHECK( vkAllocateCommandBuffers( gDevice, &commandBufferAllocateInfo, &gTexCommandBuffer ) );
+    SetObjectName( gDevice, (uint64_t)gTexCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, "texCommandBuffer" );
+
+    VkSamplerCreateInfo samplerInfo = {};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_NEAREST;
+    samplerInfo.minFilter = samplerInfo.magFilter;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = samplerInfo.addressModeU;
+    samplerInfo.addressModeW = samplerInfo.addressModeU;
+    samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+    samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
+    samplerInfo.maxAnisotropy = 1;
+    samplerInfo.anisotropyEnable = VK_FALSE;
+    samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    VK_CHECK( vkCreateSampler( gDevice, &samplerInfo, nullptr, &sampler ) );
+    SetObjectName( gDevice, (uint64_t)sampler, VK_OBJECT_TYPE_SAMPLER, "sampler" );
+}
+
+void aeBeginRenderPass()
+{
+    VkClearValue clearValues[ 3 ] = {};
+    
+    //clearValues[ 0 ].color = GfxDeviceGlobal::clearColor;
+    //clearValues[ 1 ].color = GfxDeviceGlobal::clearColor;
+    clearValues[ 2 ].depthStencil = { 1.0f, 0 };
+
+    VkRenderPassBeginInfo renderPassBeginInfo = {};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = gRenderPass;
+    renderPassBeginInfo.renderArea = { { 0, 0, }, { gWidth, gHeight } };
+    renderPassBeginInfo.clearValueCount = gMsaaSampleBits != VK_SAMPLE_COUNT_1_BIT ? 3 : 2;
+    renderPassBeginInfo.pClearValues = clearValues;
+    renderPassBeginInfo.framebuffer = gSwapchainResources[ gCurrentBuffer ].frameBuffer;
+
+    vkCmdBeginRenderPass( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE );
+}
+
+void aeEndRenderPass()
+{
+    vkCmdEndRenderPass( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer );
 }
 
 void aeBeginFrame()
