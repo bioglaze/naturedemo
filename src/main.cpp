@@ -6,6 +6,8 @@
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
 void aeBeginFrame();
 void aeEndFrame();
+void aeBeginRenderPass();
+void aeEndRenderPass();
 
 int main()
 {
@@ -47,6 +49,8 @@ int main()
         }
 
         aeBeginFrame();
+        aeBeginRenderPass();
+        aeEndRenderPass();
         aeEndFrame();
     }
     
