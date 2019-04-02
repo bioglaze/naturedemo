@@ -8,8 +8,12 @@
 aeFile aeLoadFile( const char* path )
 {
     aeFile outFile;
+#ifdef _MSC_VER
     FILE* file = nullptr;
     /*errno_t err =*/ fopen_s( &file, path, "rb" );
+#else
+    FILE* file = fopen( path, "rb" );
+#endif
 
     if (file)
     {    
@@ -18,7 +22,11 @@ aeFile aeLoadFile( const char* path )
         fseek( file, 0, SEEK_SET );
         outFile.data = new unsigned char[ length ];
         outFile.size = (unsigned)length;
+#ifdef _MSC_VER
         strncpy_s( outFile.path, 260, path, strlen( path ) );
+#else
+        strncpy( outFile.path, path, strlen( path ) );
+#endif
         fread( outFile.data, 1, length, file );    
         fclose( file );
     }

@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 #include <vulkan/vulkan.h>
 #include "file.hpp"
 
