@@ -63,7 +63,7 @@ unsigned gCurrentBuffer = 0;
 VkCommandBuffer gCurrentDrawCommandBuffer;
 constexpr unsigned TextureCount = 20;
 VkSampler sampler;
-VkImageView view;
+VkImageView views[ TextureCount ];
 VkBufferView gPositionsView;
 VkBufferView gUVSView;
 VkPipelineLayout gPipelineLayout = VK_NULL_HANDLE;
@@ -1022,7 +1022,7 @@ void aeBeginFrame()
     for (int i = 0; i < TextureCount; ++i)
     {
         samplerInfos[ i ].sampler = sampler;
-        samplerInfos[ i ].imageView = view;
+        samplerInfos[ i ].imageView = views[ i ];
         samplerInfos[ i ].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
