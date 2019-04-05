@@ -13,5 +13,6 @@ all:
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c file.cpp -o file.o
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c texture.cpp -o texture.o
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c shader.cpp -o shader.o
+	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c vertexbuffer_vulkan.cpp -o vertexbuffer.o
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) main.cpp $(LINKER) -o ../build/naturedemo
 

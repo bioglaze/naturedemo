@@ -2,6 +2,7 @@
 #include "file.hpp"
 #include "shader.hpp"
 #include "window.hpp"
+#include "texture.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
 void aeBeginFrame();
@@ -19,7 +20,9 @@ int main()
     
     aeFile waterVertFile = aeLoadFile( "water_vs.spv" );
     aeFile waterFragFile = aeLoadFile( "water_fs.spv" );
+    aeFile gliderFile = aeLoadFile( "glider.tga" );
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
+    aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
     
     if (window.index == -1)
     {

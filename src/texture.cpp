@@ -19,6 +19,8 @@ extern VkCommandPool gCmdPool;
 
 void SetObjectName( VkDevice device, uint64_t object, VkObjectType objectType, const char* name );
 uint32_t GetMemoryType( uint32_t typeBits, const VkPhysicalDeviceMemoryProperties& deviceMemoryProperties, VkFlags properties );
+void SetImageLayout( VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlags aspectMask, VkImageLayout oldImageLayout,
+                     VkImageLayout newImageLayout, unsigned layerCount, unsigned mipLevel, unsigned mipLevelCount, VkPipelineStageFlags srcStageFlags );
 
 struct aeTextureImpl
 {
@@ -93,8 +95,6 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
     unsigned dataBeginOffset = 0;
     unsigned mipLevelCount = 1;
     VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
-    bool isOpaque = false;
-    unsigned mipOffsets[ 15 ] = {};
 
     if (strstr( file.path, ".tga" ) || strstr( file.path, ".TGA" ))
     {
@@ -172,6 +172,11 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
     viewInfo.image = tex.image;
     VK_CHECK( vkCreateImageView( gDevice, &viewInfo, nullptr, &views[ outTexture.index ] ) );
     SetObjectName( gDevice, (uint64_t)views[ outTexture.index ], VK_OBJECT_TYPE_IMAGE_VIEW, file.path );
+
+    for (unsigned i = 0; i < 20; ++i)
+    {
+        views[ i ] = views[ outTexture.index ];
+    }
     
     VkCommandBufferBeginInfo cmdBufInfo = {};
     cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

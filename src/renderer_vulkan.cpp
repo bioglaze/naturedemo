@@ -68,6 +68,8 @@ VkBufferView gPositionsView;
 VkBufferView gUVSView;
 VkPipelineLayout gPipelineLayout = VK_NULL_HANDLE;
 VkCommandBuffer gTexCommandBuffer;
+VkDescriptorSetLayout gDescriptorSetLayout;
+VkDescriptorPool gDescriptorPool;
 unsigned gWidth = 0;
 unsigned gHeight = 0;
 
@@ -905,6 +907,87 @@ static void CreateDepthStencil( uint32_t width, uint32_t height )
     VK_CHECK( vkCreateImageView( gDevice, &depthStencilView, nullptr, &gDepthStencil.view ) );
 }
 
+static void CreateDescriptorSets()
+{
+    VkDescriptorSetLayoutBinding layoutBindingImage = {};
+    layoutBindingImage.binding = 0;
+    layoutBindingImage.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    layoutBindingImage.descriptorCount = TextureCount;
+    layoutBindingImage.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutBinding layoutBindingSampler = {};
+    layoutBindingSampler.binding = 1;
+    layoutBindingSampler.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    layoutBindingSampler.descriptorCount = 1;
+    layoutBindingSampler.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorSetLayoutBinding layoutBindingBuffer = {};
+    layoutBindingBuffer.binding = 2;
+    layoutBindingBuffer.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+    layoutBindingBuffer.descriptorCount = 1;
+    layoutBindingBuffer.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutBinding layoutBindingBuffer2 = {};
+    layoutBindingBuffer2.binding = 3;
+    layoutBindingBuffer2.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    layoutBindingBuffer2.descriptorCount = 1;
+    layoutBindingBuffer2.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_COMPUTE_BIT;
+
+    VkDescriptorSetLayoutBinding layoutBindingBuffer3 = {};
+    layoutBindingBuffer3.binding = 4;
+    layoutBindingBuffer3.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+    layoutBindingBuffer3.descriptorCount = 1;
+    layoutBindingBuffer3.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    constexpr int bindingCount = 5;
+    VkDescriptorSetLayoutBinding bindings[ bindingCount ] = { layoutBindingImage, layoutBindingSampler, layoutBindingBuffer, layoutBindingBuffer2, layoutBindingBuffer3 };
+        
+    VkDescriptorSetLayoutCreateInfo setCreateInfo = {};
+    setCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    setCreateInfo.bindingCount = bindingCount;
+    setCreateInfo.pBindings = bindings;
+
+    VK_CHECK( vkCreateDescriptorSetLayout( gDevice, &setCreateInfo, nullptr, &gDescriptorSetLayout ) );
+
+    VkDescriptorPoolSize typeCounts[ bindingCount ];
+    typeCounts[ 0 ].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    typeCounts[ 0 ].descriptorCount = 3 * TextureCount;
+    typeCounts[ 1 ].type = VK_DESCRIPTOR_TYPE_SAMPLER;
+    typeCounts[ 1 ].descriptorCount = 3;
+    typeCounts[ 2 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+    typeCounts[ 2 ].descriptorCount = 3;
+    typeCounts[ 3 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    typeCounts[ 3 ].descriptorCount = 3;
+    typeCounts[ 4 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+    typeCounts[ 4 ].descriptorCount = 3;
+
+    VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
+    descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolInfo.poolSizeCount = bindingCount;
+    descriptorPoolInfo.pPoolSizes = typeCounts;
+    descriptorPoolInfo.maxSets = 3;
+    descriptorPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+    VK_CHECK( vkCreateDescriptorPool( gDevice, &descriptorPoolInfo, nullptr, &gDescriptorPool ) );
+
+    VkDescriptorSetLayout layouts[ 3 ] = { gDescriptorSetLayout, gDescriptorSetLayout, gDescriptorSetLayout };
+
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = gDescriptorPool;
+    allocInfo.descriptorSetCount = 3;
+    allocInfo.pSetLayouts = layouts;
+
+    VkDescriptorSet sets[ 3 ] = {};
+        
+    VK_CHECK( vkAllocateDescriptorSets( gDevice, &allocInfo, sets ) );
+
+    for (uint32_t i = 0; i < gSwapchainImageCount; ++i)
+    {
+        gSwapchainResources[ i ].descriptorSet = sets[ i ];
+    }
+}
+
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window )
 {
     gWidth = width;
@@ -942,6 +1025,8 @@ void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* c
     VK_CHECK( vkAllocateCommandBuffers( gDevice, &commandBufferAllocateInfo, &gTexCommandBuffer ) );
     SetObjectName( gDevice, (uint64_t)gTexCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, "texCommandBuffer" );
 
+    CreateDescriptorSets();
+    
     VkSamplerCreateInfo samplerInfo = {};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_NEAREST;
@@ -1019,7 +1104,7 @@ void aeBeginFrame()
 
     VkDescriptorImageInfo samplerInfos[ TextureCount ] = {};
 
-    for (int i = 0; i < TextureCount; ++i)
+    for (unsigned i = 0; i < TextureCount; ++i)
     {
         samplerInfos[ i ].sampler = sampler;
         samplerInfos[ i ].imageView = views[ i ];
