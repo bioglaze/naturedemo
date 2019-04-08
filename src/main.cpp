@@ -1,10 +1,12 @@
 #include <stdio.h>
 #include "file.hpp"
+#include "mesh.hpp"
 #include "shader.hpp"
-#include "window.hpp"
 #include "texture.hpp"
+#include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
+void aeRenderMesh( const aeMesh& mesh );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -23,6 +25,7 @@ int main()
     aeFile gliderFile = aeLoadFile( "glider.tga" );
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
+    aeMesh plane = aeCreatePlane();
     
     if (window.index == -1)
     {
@@ -53,6 +56,9 @@ int main()
 
         aeBeginFrame();
         aeBeginRenderPass();
+
+        aeRenderMesh( plane );
+
         aeEndRenderPass();
         aeEndFrame();
     }

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <vulkan/vulkan.h>
 #include "window.hpp"
+#include "mesh.hpp"
 
 #define _DEBUG 1
 #define VK_CHECK( x ) { VkResult res = (x); assert( res == VK_SUCCESS ); }
@@ -306,6 +307,11 @@ void SetImageLayout( VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlag
     }
 
     vkCmdPipelineBarrier( cmdbuffer, srcStageFlags, destStageFlags, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier );
+}
+
+void aeRenderMesh( const aeMesh& mesh )
+{
+
 }
 
 static bool CreateInstance( VkInstance& outInstance )

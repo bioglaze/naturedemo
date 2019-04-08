@@ -30,9 +30,9 @@ struct aeTextureImpl
     VkDeviceMemory deviceMemory = VK_NULL_HANDLE;
 };
 
-aeTextureImpl textures[ 100 ];
-int textureCount = 0;
-VkCommandBuffer texCommandBuffer;
+static aeTextureImpl textures[ 100 ];
+static int textureCount = 0;
+static VkCommandBuffer texCommandBuffer;
 
 static void LoadTGA( const aeFile& file, unsigned& outWidth, unsigned& outHeight, unsigned &outDataBeginOffset )
 {
@@ -207,6 +207,47 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
     VK_CHECK( vkQueueSubmit( gGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE ) );
     
     vkDeviceWaitIdle( gDevice );
+
+    VK_CHECK( vkBeginCommandBuffer( texCommandBuffer, &cmdBufInfo ) );
+
+    VkBuffer stagingBuffers[ 15 ] = {};
+    VkDeviceMemory stagingMemories[ 15 ] = {};
+
+    for (unsigned i = 1; i < mipLevelCount; ++i)
+    {
+        VkImageBlit imageBlit = {};
+        imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageBlit.srcSubresource.layerCount = 1;
+        imageBlit.srcSubresource.mipLevel = i - 1;
+        imageBlit.srcOffsets[ 0 ] = { 0, 0, 0 };
+        imageBlit.srcOffsets[ 1 ] = { int32_t( tex.width >> (i - 1) ), int32_t( tex.height >> (i - 1) ), 1 };
+
+        imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageBlit.dstSubresource.baseArrayLayer = 0;
+        imageBlit.dstSubresource.layerCount = 1;
+        imageBlit.dstSubresource.mipLevel = i;
+        imageBlit.dstOffsets[ 0 ] = { 0, 0, 0 };
+        imageBlit.dstOffsets[ 1 ] = { int32_t( tex.width >> i ), int32_t( tex.height >> i ), 1 };
+
+        SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, i, 1, VK_PIPELINE_STAGE_TRANSFER_BIT );
+        vkCmdBlitImage( texCommandBuffer, tex.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, tex.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR );
+        SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, i, 1, VK_PIPELINE_STAGE_TRANSFER_BIT );
+    }
+
+    SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, mipLevelCount, VK_PIPELINE_STAGE_TRANSFER_BIT );
+    
+    vkEndCommandBuffer( texCommandBuffer );
+    VK_CHECK( vkQueueSubmit( gGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE ) );
+
+    vkDeviceWaitIdle( gDevice );
+    vkFreeMemory( gDevice, stagingMemory, nullptr );
+    vkDestroyBuffer( gDevice, stagingBuffer, nullptr );
+
+    for (unsigned i = 0; i < 15; ++i)
+    {
+        vkDestroyBuffer( gDevice, stagingBuffers[ i ], nullptr );
+        vkFreeMemory( gDevice, stagingMemories[ i ], nullptr );
+    }
 
     return outTexture;
 }
