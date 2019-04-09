@@ -77,15 +77,19 @@
   <ItemGroup>
     <ClCompile Include="..\src\file.cpp" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\mesh.cpp" />
     <ClCompile Include="..\src\renderer_vulkan.cpp" />
     <ClCompile Include="..\src\shader.cpp" />
     <ClCompile Include="..\src\texture.cpp" />
+    <ClCompile Include="..\src\vertexbuffer_vulkan.cpp" />
     <ClCompile Include="..\src\window_win32.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\file.hpp" />
+    <ClInclude Include="..\src\mesh.hpp" />
     <ClInclude Include="..\src\shader.hpp" />
     <ClInclude Include="..\src\texture.hpp" />
+    <ClInclude Include="..\src\vertexbuffer.hpp" />
     <ClInclude Include="..\src\window.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
