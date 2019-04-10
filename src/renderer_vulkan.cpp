@@ -992,6 +992,19 @@ static void CreateDescriptorSets()
     {
         gSwapchainResources[ i ].descriptorSet = sets[ i ];
     }
+
+    VkPipelineLayoutCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    createInfo.setLayoutCount = 1;
+    createInfo.pSetLayouts = &gDescriptorSetLayout;
+
+    VkPushConstantRange pushConstantRange = {};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushConstantRange.size = sizeof( int );
+
+    createInfo.pushConstantRangeCount = 1;
+    createInfo.pPushConstantRanges = &pushConstantRange;
+    VK_CHECK( vkCreatePipelineLayout( gDevice, &createInfo, nullptr, &gPipelineLayout ) );
 }
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window )
