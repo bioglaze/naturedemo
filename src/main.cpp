@@ -14,10 +14,11 @@ void aeEndRenderPass();
 
 int main()
 {
-    constexpr unsigned width = 1920;
-    constexpr unsigned height = 1080;
+    unsigned width = 1920;
+    unsigned height = 1080;
     
     aeWindow window = aeCreateWindow( width, height, "Nature Demo" );
+    aeGetRenderArea( window, width, height );
     aeInitRenderer( width, height, window.connection, window.window );
     
     aeFile waterVertFile = aeLoadFile( "water_vs.spv" );

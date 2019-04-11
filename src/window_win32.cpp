@@ -12,6 +12,7 @@ struct aeWindowImpl
     unsigned eventCount = 0;
     unsigned windowWidth = 0;
     unsigned windowHeight = 0;
+    unsigned windowWidthWithoutTitleBar = 0;
     unsigned windowHeightWithoutTitleBar = 0;
     bool isGamePadConnected = false;
     HWND hwnd = nullptr;
@@ -260,11 +261,18 @@ aeWindow aeCreateWindow( unsigned width, unsigned height, const char* title )
 
     RECT rect = {};
     GetClientRect( windows[ outWindow.index ].hwnd, &rect );
+    windows[ outWindow.index ].windowWidthWithoutTitleBar = rect.right;
     windows[ outWindow.index ].windowHeightWithoutTitleBar = rect.bottom;
-
+    
     InitGamePad();
 
     return outWindow;
+}
+
+void aeGetRenderArea( const aeWindow& window, unsigned& outWidth, unsigned& outHeight )
+{
+    outWidth = windows[ window.index ].windowWidthWithoutTitleBar;
+    outHeight = windows[ window.index ].windowHeightWithoutTitleBar;
 }
 
 void aePumpWindowEvents( const aeWindow& window )

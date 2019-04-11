@@ -38,6 +38,7 @@ struct aeWindowEvent
 };
     
 aeWindow aeCreateWindow( unsigned width, unsigned height, const char* title );
+void aeGetRenderArea( const aeWindow& window, unsigned& outWidth, unsigned& outHeight );
 void aePumpWindowEvents( const aeWindow& window );
 const aeWindowEvent& aePopWindowEvent( const aeWindow& window );
 void aeDestroyWindow( aeWindow window );
