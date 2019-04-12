@@ -71,6 +71,13 @@ VkPipelineLayout gPipelineLayout = VK_NULL_HANDLE;
 VkCommandBuffer gTexCommandBuffer;
 VkDescriptorSetLayout gDescriptorSetLayout;
 VkDescriptorPool gDescriptorPool;
+VkBuffer gIndirectBuffer = VK_NULL_HANDLE;
+VkDeviceMemory gIndirectMemory = VK_NULL_HANDLE;
+constexpr unsigned IndirectCommandCount = 1;
+VkDrawIndexedIndirectCommand gIndirectCommands[ IndirectCommandCount ] = {};
+void* gMappedIndirectStagingMemory = nullptr;
+VkBuffer gIndirectStagingBuffer = VK_NULL_HANDLE;
+
 unsigned gWidth = 0;
 unsigned gHeight = 0;
 
@@ -311,7 +318,22 @@ void SetImageLayout( VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlag
 
 void aeRenderMesh( const aeMesh& mesh )
 {
+#if 0
+	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
+	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
 
+	VkRect2D scissor = { { 0, 0 }, { gWidth, gHeight } };
+	vkCmdSetScissor( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &scissor );
+
+	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, blendMode, modifiedCullMode, depthMode, fillMode, topology ) ].pso );
+	vkCmdBindIndexBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VertexBufferGet( indices ), 0, VK_INDEX_TYPE_UINT16 );
+
+	unsigned pushConstant = 0;
+	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( int ), &pushConstant );
+
+	unsigned indirectDrawCount = 1;
+	vkCmdDrawIndexedIndirect( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gIndirectBuffer, 0, indirectDrawCount, sizeof( VkDrawIndexedIndirectCommand ) );
+#endif
 }
 
 static bool CreateInstance( VkInstance& outInstance )
@@ -1007,6 +1029,87 @@ static void CreateDescriptorSets()
     VK_CHECK( vkCreatePipelineLayout( gDevice, &createInfo, nullptr, &gPipelineLayout ) );
 }
 
+void CopyBuffer( VkBuffer source, VkBuffer& destination, unsigned bufferSize )
+{
+    VkCommandBufferAllocateInfo cmdBufInfo = {};
+    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cmdBufInfo.commandPool = gCmdPool;
+    cmdBufInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    cmdBufInfo.commandBufferCount = 1;
+
+    VkCommandBuffer copyCommandBuffer;
+    VK_CHECK( vkAllocateCommandBuffers( gDevice, &cmdBufInfo, &copyCommandBuffer ) );
+
+    VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+    cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+    VkBufferCopy copyRegion = {};
+    copyRegion.size = bufferSize;
+
+    VK_CHECK( vkBeginCommandBuffer( copyCommandBuffer, &cmdBufferBeginInfo ) );
+
+    vkCmdCopyBuffer( copyCommandBuffer, source, destination, 1, &copyRegion );
+
+    VK_CHECK( vkEndCommandBuffer( copyCommandBuffer ) );
+
+    VkSubmitInfo copySubmitInfo = {};
+    copySubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    copySubmitInfo.commandBufferCount = 1;
+    copySubmitInfo.pCommandBuffers = &copyCommandBuffer;
+
+    VK_CHECK( vkQueueSubmit( gGraphicsQueue, 1, &copySubmitInfo, VK_NULL_HANDLE ) );
+    VK_CHECK( vkQueueWaitIdle( gGraphicsQueue ) );
+    vkFreeCommandBuffers( gDevice, cmdBufInfo.commandPool, 1, &copyCommandBuffer );
+}
+
+static void UpdateIndirectBuffer()
+{
+	unsigned instanceCount = 1;
+	unsigned indexCount = 36;
+
+	gIndirectCommands[ 0 ].instanceCount = instanceCount;
+	gIndirectCommands[ 0 ].firstInstance = 0 * instanceCount;
+	gIndirectCommands[ 0 ].firstIndex = 0;
+	gIndirectCommands[ 0 ].indexCount = indexCount;
+
+	memcpy( gMappedIndirectStagingMemory, &gIndirectCommands, sizeof( gIndirectCommands ) );
+	CopyBuffer( gIndirectStagingBuffer, gIndirectBuffer, IndirectCommandCount * sizeof( VkDrawIndexedIndirectCommand ) );
+}
+
+static void CreateIndirectBuffer()
+{
+    VkBufferCreateInfo bufferInfo = {};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = IndirectCommandCount * sizeof( VkDrawIndexedIndirectCommand );
+    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    VK_CHECK( vkCreateBuffer( gDevice, &bufferInfo, nullptr, &gIndirectStagingBuffer ) );
+    SetObjectName( gDevice, (uint64_t)gIndirectStagingBuffer, VK_OBJECT_TYPE_BUFFER, "indirectStagingBuffer" );
+
+    VkDeviceMemory stagingMemory;
+    VkMemoryRequirements memReqs;
+    vkGetBufferMemoryRequirements( gDevice, gIndirectStagingBuffer, &memReqs );
+
+    VkMemoryAllocateInfo memAlloc = {};
+    memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memAlloc.allocationSize = memReqs.size;
+    memAlloc.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
+    VK_CHECK( vkAllocateMemory( gDevice, &memAlloc, nullptr, &stagingMemory ) );
+    VK_CHECK( vkBindBufferMemory( gDevice, gIndirectStagingBuffer, stagingMemory, 0 ) );
+
+    bufferInfo.usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    VK_CHECK( vkCreateBuffer( gDevice, &bufferInfo, nullptr, &gIndirectBuffer ) );
+    SetObjectName( gDevice, (uint64_t)gIndirectBuffer, VK_OBJECT_TYPE_BUFFER, "indirectBuffer" );
+
+    vkGetBufferMemoryRequirements( gDevice, gIndirectBuffer, &memReqs );
+    memAlloc.allocationSize = memReqs.size;
+    memAlloc.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+    VK_CHECK( vkAllocateMemory( gDevice, &memAlloc, nullptr, &gIndirectMemory ) );
+    VK_CHECK( vkBindBufferMemory( gDevice, gIndirectBuffer, gIndirectMemory, 0 ) );
+    VK_CHECK( vkMapMemory( gDevice, stagingMemory, 0, bufferInfo.size, 0, &gMappedIndirectStagingMemory ) );
+
+    UpdateIndirectBuffer();
+}
+
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window )
 {
     gWidth = width;
@@ -1045,7 +1148,8 @@ void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* c
     SetObjectName( gDevice, (uint64_t)gTexCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, "texCommandBuffer" );
 
     CreateDescriptorSets();
-    
+    CreateIndirectBuffer();
+
     VkSamplerCreateInfo samplerInfo = {};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_NEAREST;
