@@ -6,7 +6,7 @@
 #include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
-void aeRenderMesh( const aeMesh& mesh );
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -58,7 +58,7 @@ int main()
         aeBeginFrame();
         aeBeginRenderPass();
 
-        aeRenderMesh( plane );
+        aeRenderMesh( plane, waterShader );
 
         aeEndRenderPass();
         aeEndFrame();

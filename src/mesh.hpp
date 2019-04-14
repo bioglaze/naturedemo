@@ -6,3 +6,4 @@ struct aeMesh
 };
 
 aeMesh aeCreatePlane();
+const struct VertexBuffer& GetIndices( const aeMesh& mesh );

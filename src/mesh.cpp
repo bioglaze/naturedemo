@@ -44,3 +44,8 @@ aeMesh aeCreatePlane()
 
     return outMesh;
 }
+
+const struct VertexBuffer& GetIndices( const aeMesh& mesh )
+{
+    return meshes[ mesh.index ].indices;
+}

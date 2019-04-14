@@ -33,7 +33,7 @@ void DestroyShaders()
     }
 }
 
-void aeShaderGetInfo( aeShader& shader, VkPipelineShaderStageCreateInfo& outVertexInfo, VkPipelineShaderStageCreateInfo& outFragmentInfo )
+void aeShaderGetInfo( const aeShader& shader, VkPipelineShaderStageCreateInfo& outVertexInfo, VkPipelineShaderStageCreateInfo& outFragmentInfo )
 {
     outVertexInfo = shaders[ shader.index ].vertexInfo;
     outFragmentInfo = shaders[ shader.index ].fragmentInfo;

@@ -5,11 +5,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <vulkan/vulkan.h>
-#include "window.hpp"
 #include "mesh.hpp"
+#include "shader.hpp"
+#include "vertexbuffer.hpp"
+#include "window.hpp"
 
 #define _DEBUG 1
 #define VK_CHECK( x ) { VkResult res = (x); assert( res == VK_SUCCESS ); }
+
+void aeShaderGetInfo( const aeShader& shader, VkPipelineShaderStageCreateInfo& outVertexInfo, VkPipelineShaderStageCreateInfo& outFragmentInfo );
+VkBuffer VertexBufferGet( const VertexBuffer& buffer );
 
 struct SwapchainResource
 {
@@ -40,6 +45,20 @@ struct DepthStencil
     VkDeviceMemory mem = VK_NULL_HANDLE;
     VkImageView view = VK_NULL_HANDLE;
 } gDepthStencil;
+
+struct PSO
+{
+    VkPipeline pso = VK_NULL_HANDLE;
+    BlendMode blendMode = BlendMode::Off;
+    CullMode cullMode = CullMode::Off;
+    DepthMode depthMode = DepthMode::NoneWriteOff;
+    VkShaderModule vertexModule = VK_NULL_HANDLE;
+    VkShaderModule fragmentModule = VK_NULL_HANDLE;
+    FillMode fillMode = FillMode::Solid;
+    Topology topology = Topology::Triangles;
+};
+
+PSO gPsos[ 50 ];
 
 VkDevice gDevice;
 VkPhysicalDevice gPhysicalDevice;
@@ -77,6 +96,7 @@ constexpr unsigned IndirectCommandCount = 1;
 VkDrawIndexedIndirectCommand gIndirectCommands[ IndirectCommandCount ] = {};
 void* gMappedIndirectStagingMemory = nullptr;
 VkBuffer gIndirectStagingBuffer = VK_NULL_HANDLE;
+VkPipelineCache gPipelineCache = VK_NULL_HANDLE;
 
 unsigned gWidth = 0;
 unsigned gHeight = 0;
@@ -316,24 +336,195 @@ void SetImageLayout( VkCommandBuffer cmdbuffer, VkImage image, VkImageAspectFlag
     vkCmdPipelineBarrier( cmdbuffer, srcStageFlags, destStageFlags, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier );
 }
 
-void aeRenderMesh( const aeMesh& mesh )
+static VkPipeline CreatePipeline( const aeShader& shader, BlendMode blendMode, CullMode cullMode, DepthMode depthMode, FillMode fillMode, Topology topology )
 {
-#if 0
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState = {};
+    inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssemblyState.topology = topology == Topology::Triangles ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState = {};
+    rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizationState.polygonMode = fillMode == FillMode::Solid ? VK_POLYGON_MODE_FILL : VK_POLYGON_MODE_LINE;
+
+    if (cullMode == CullMode::Off)
+    {
+        rasterizationState.cullMode = VK_CULL_MODE_NONE;
+    }
+    else if (cullMode == CullMode::Back)
+    {
+        rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+}
+    else if (cullMode == CullMode::Front)
+    {
+        rasterizationState.cullMode = VK_CULL_MODE_FRONT_BIT;
+    }
+    else
+    {
+        assert( false && "unhandled cull mode" );
+    }
+
+    rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizationState.depthClampEnable = VK_FALSE;
+    rasterizationState.rasterizerDiscardEnable = VK_FALSE;
+    rasterizationState.depthBiasEnable = VK_FALSE;
+    rasterizationState.lineWidth = 1;
+
+    VkPipelineColorBlendAttachmentState blendAttachmentState[ 1 ] = {};
+    blendAttachmentState[ 0 ].colorWriteMask = 0xF;
+    blendAttachmentState[ 0 ].blendEnable = blendMode != BlendMode::Off ? VK_TRUE : VK_FALSE;
+    blendAttachmentState[ 0 ].alphaBlendOp = VK_BLEND_OP_ADD;
+    blendAttachmentState[ 0 ].colorBlendOp = VK_BLEND_OP_ADD;
+
+    if (blendMode == BlendMode::AlphaBlend)
+    {
+        blendAttachmentState[ 0 ].srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+        blendAttachmentState[ 0 ].dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+        blendAttachmentState[ 0 ].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        blendAttachmentState[ 0 ].dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    }
+    else if (blendMode == BlendMode::Additive)
+    {
+        blendAttachmentState[ 0 ].srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        blendAttachmentState[ 0 ].dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+        blendAttachmentState[ 0 ].srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        blendAttachmentState[ 0 ].dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    }
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState = {};
+    colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlendState.attachmentCount = 1;
+    colorBlendState.pAttachments = blendAttachmentState;
+
+    VkPipelineDynamicStateCreateInfo dynamicState = {};
+    VkDynamicState dynamicStateEnables[ 2 ] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.pDynamicStates = &dynamicStateEnables[ 0 ];
+    dynamicState.dynamicStateCount = 2;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState = {};
+    depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencilState.depthTestEnable = depthMode == DepthMode::NoneWriteOff ? VK_FALSE : VK_TRUE;
+    depthStencilState.depthWriteEnable = depthMode == DepthMode::LessOrEqualWriteOn ? VK_TRUE : VK_FALSE;
+
+    if (depthMode == DepthMode::LessOrEqualWriteOn || depthMode == DepthMode::LessOrEqualWriteOff)
+    {
+        depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    }
+    else if (depthMode == DepthMode::NoneWriteOff)
+    {
+        depthStencilState.depthCompareOp = VK_COMPARE_OP_ALWAYS;
+    }
+    else
+    {
+        assert( false && "unhandled depth function" );
+    }
+
+    depthStencilState.depthBoundsTestEnable = VK_FALSE;
+    depthStencilState.back.failOp = VK_STENCIL_OP_KEEP;
+    depthStencilState.back.passOp = VK_STENCIL_OP_KEEP;
+    depthStencilState.back.compareOp = VK_COMPARE_OP_ALWAYS;
+    depthStencilState.stencilTestEnable = VK_FALSE;
+    depthStencilState.front = depthStencilState.back;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = {};
+    multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampleState.rasterizationSamples = gMsaaSampleBits;
+
+    VkPipelineShaderStageCreateInfo vertexInfo, fragmentInfo;
+    aeShaderGetInfo( shader, vertexInfo, fragmentInfo );
+    const VkPipelineShaderStageCreateInfo shaderStages[ 2 ] = { vertexInfo, fragmentInfo };
+
+    VkPipelineViewportStateCreateInfo viewportState = {};
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.viewportCount = 1;
+    viewportState.scissorCount = 1;
+
+    VkPipelineVertexInputStateCreateInfo inputState = {};
+    inputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+
+    VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
+    pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineCreateInfo.layout = gPipelineLayout;
+    pipelineCreateInfo.renderPass = gRenderPass;
+    pipelineCreateInfo.pVertexInputState = &inputState;
+    pipelineCreateInfo.pInputAssemblyState = &inputAssemblyState;
+    pipelineCreateInfo.pRasterizationState = &rasterizationState;
+    pipelineCreateInfo.pColorBlendState = &colorBlendState;
+    pipelineCreateInfo.pMultisampleState = &multisampleState;
+    pipelineCreateInfo.pViewportState = &viewportState;
+    pipelineCreateInfo.pDepthStencilState = &depthStencilState;
+    pipelineCreateInfo.stageCount = 2;
+    pipelineCreateInfo.pStages = shaderStages;
+    pipelineCreateInfo.pDynamicState = &dynamicState;
+
+    VkPipeline pso;
+
+    VK_CHECK( vkCreateGraphicsPipelines( gDevice, gPipelineCache, 1, &pipelineCreateInfo, nullptr, &pso ) );
+    return pso;
+}
+
+static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMode, DepthMode depthMode, FillMode fillMode, Topology topology )
+{
+    int psoIndex = -1;
+    int nextFreePsoIndex = -1;
+
+    for (int i = 0; i < 250; ++i)
+    {
+        if (gPsos[ i ].pso == VK_NULL_HANDLE)
+        {
+            nextFreePsoIndex = i;
+        }
+    }
+
+    assert( nextFreePsoIndex != -1 );
+
+    VkPipelineShaderStageCreateInfo vertexInfo, fragmentInfo;
+    aeShaderGetInfo( shader, vertexInfo, fragmentInfo );
+
+    for (int i = 0; i < 250; ++i)
+    {
+        if (gPsos[ i ].blendMode == blendMode && gPsos[ i ].depthMode == depthMode && gPsos[ i ].cullMode == cullMode &&
+            gPsos[ i ].topology == topology && gPsos[ i ].fillMode == fillMode &&
+            gPsos[ i ].vertexModule == vertexInfo.module && gPsos[ i ].fragmentModule == fragmentInfo.module)
+        {
+            psoIndex = i;
+            break;
+        }
+    }
+
+    if (psoIndex == -1)
+    {
+        psoIndex = nextFreePsoIndex;
+        gPsos[ psoIndex ].pso = CreatePipeline( shader, blendMode, cullMode, depthMode, fillMode, topology );
+        gPsos[ psoIndex ].blendMode = blendMode;
+        gPsos[ psoIndex ].fillMode = fillMode;
+        gPsos[ psoIndex ].topology = topology;
+        gPsos[ psoIndex ].cullMode = cullMode;
+        gPsos[ psoIndex ].depthMode = depthMode;
+        gPsos[ psoIndex ].vertexModule = vertexInfo.module;
+        gPsos[ psoIndex ].fragmentModule = fragmentInfo.module;
+    }
+
+    return psoIndex;
+}
+
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader )
+{
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
 	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
 
 	VkRect2D scissor = { { 0, 0 }, { gWidth, gHeight } };
 	vkCmdSetScissor( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &scissor );
 
-	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, blendMode, modifiedCullMode, depthMode, fillMode, topology ) ].pso );
+    const VertexBuffer& indices = GetIndices( mesh );
+	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, BlendMode::Off, CullMode::Back, DepthMode::NoneWriteOff, FillMode::Solid, Topology::Triangles ) ].pso );
 	vkCmdBindIndexBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VertexBufferGet( indices ), 0, VK_INDEX_TYPE_UINT16 );
 
 	unsigned pushConstant = 0;
-	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( int ), &pushConstant );
+	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( unsigned ), &pushConstant );
 
 	unsigned indirectDrawCount = 1;
 	vkCmdDrawIndexedIndirect( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gIndirectBuffer, 0, indirectDrawCount, sizeof( VkDrawIndexedIndirectCommand ) );
-#endif
 }
 
 static bool CreateInstance( VkInstance& outInstance )
