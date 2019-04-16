@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <vulkan/vulkan.h>
+#include "matrix.hpp"
 #include "mesh.hpp"
 #include "shader.hpp"
 #include "vertexbuffer.hpp"
@@ -112,6 +113,11 @@ PFN_vkQueuePresentKHR queuePresentKHR;
 PFN_vkSetDebugUtilsObjectNameEXT setDebugUtilsObjectNameEXT;
 PFN_vkCmdBeginDebugUtilsLabelEXT CmdBeginDebugUtilsLabelEXT;
 PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;
+
+static void WriteMatrix( float m[ 16 ] )
+{
+    memcpy( ubo.uboData, m, 16 * 4 );
+}
 
 static const char* getObjectType( VkObjectType type )
 {
@@ -510,6 +516,15 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
 
 void aeRenderMesh( const aeMesh& mesh, const aeShader& shader )
 {
+    Matrix localToView;
+    Matrix localToWorld;
+    Matrix viewToClip;
+    Matrix worldToView;
+    Matrix::Multiply( localToWorld, worldToView, localToView );
+    Matrix localToClip;
+    Matrix::Multiply( localToView, viewToClip, localToClip );
+    WriteMatrix( localToClip.m );
+
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
 	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
 

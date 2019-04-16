@@ -9,6 +9,7 @@
     <ClCompile Include="..\src\texture.cpp" />
     <ClCompile Include="..\src\mesh.cpp" />
     <ClCompile Include="..\src\vertexbuffer_vulkan.cpp" />
+    <ClCompile Include="..\src\matrix.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\file.hpp" />
@@ -17,5 +18,8 @@
     <ClInclude Include="..\src\texture.hpp" />
     <ClInclude Include="..\src\mesh.hpp" />
     <ClInclude Include="..\src\vertexbuffer.hpp" />
+    <ClInclude Include="..\src\matrix.hpp" />
+    <ClInclude Include="..\src\quaternion.hpp" />
+    <ClInclude Include="..\src\vec3.hpp" />
   </ItemGroup>
 </Project>
