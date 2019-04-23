@@ -586,7 +586,7 @@ static bool CreateInstance( VkInstance& outInstance )
     instanceCreateInfo.enabledExtensionCount = hasDebugUtils ? 3 : 2;
     instanceCreateInfo.ppEnabledExtensionNames = enabledExtensions;
 #if _DEBUG
-    const char* validationLayerNames[] = { "VK_LAYER_LUNARG_standard_validation" };
+    const char* validationLayerNames[] = { "VK_LAYER_KHRONOS_validation" };
     instanceCreateInfo.enabledLayerCount = 1;
     instanceCreateInfo.ppEnabledLayerNames = validationLayerNames;
 #endif
