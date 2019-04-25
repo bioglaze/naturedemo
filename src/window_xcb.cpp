@@ -117,6 +117,12 @@ void InitGamePad()
     closedir( dir );
 }
 
+void aeGetRenderArea( const aeWindow& window, unsigned& outWidth, unsigned& outHeight )
+{
+    outWidth = window.width;
+    outHeight = window.height;
+}
+
 aeWindow aeCreateWindow( unsigned width, unsigned height, const char* title )
 {
     aeWindow outWindow;
