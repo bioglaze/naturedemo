@@ -59,7 +59,7 @@ struct PSO
     Topology topology = Topology::Triangles;
 };
 
-PSO gPsos[ 50 ];
+PSO gPsos[ 250 ];
 
 VkDevice gDevice;
 VkPhysicalDevice gPhysicalDevice;
