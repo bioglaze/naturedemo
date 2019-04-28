@@ -4,6 +4,7 @@
 #include <linux/joystick.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_keysyms.h>
@@ -162,8 +163,8 @@ aeWindow aeCreateWindow( unsigned width, unsigned height, const char* title )
     xcb_icccm_size_hints_set_min_size( &hints, outWindow.width, outWindow.height );
     xcb_icccm_size_hints_set_max_size( &hints, outWindow.width, outWindow.height );
     xcb_icccm_set_wm_size_hints( outWindow.connection, outWindow.window, XCB_ATOM_WM_NORMAL_HINTS, &hints );
-
-    xcb_change_property( outWindow.connection, XCB_PROP_MODE_REPLACE, outWindow.window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, 10, title );
+    printf("len: %d\n", strlen( title ) );
+    xcb_change_property( outWindow.connection, XCB_PROP_MODE_REPLACE, outWindow.window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen( title ), title );
 
     if (width == 0 && height == 0)
     {

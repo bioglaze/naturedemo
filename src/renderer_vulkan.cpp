@@ -9,6 +9,7 @@
 #include "mesh.hpp"
 #include "shader.hpp"
 #include "vertexbuffer.hpp"
+#include "vec3.hpp"
 #include "window.hpp"
 
 #define _DEBUG 1
@@ -516,10 +517,17 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
 
 void aeRenderMesh( const aeMesh& mesh, const aeShader& shader )
 {
-    Matrix localToView;
     Matrix localToWorld;
+    localToWorld.MakeIdentity();
+    localToWorld.Translate( { 0, 0, 5 } );
+    
+    Matrix localToView;
     Matrix viewToClip;
+    viewToClip.MakeProjection( 45.0f, 16.0f / 9.0f, 0.1f, 400.0f );
+    
     Matrix worldToView;
+    worldToView.MakeLookAt( { 0, 0, 0 }, { 0, 0, -400 }, { 0, 1, 0 } );
+    
     Matrix::Multiply( localToWorld, worldToView, localToView );
     Matrix localToClip;
     Matrix::Multiply( localToView, viewToClip, localToClip );
