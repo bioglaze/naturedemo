@@ -697,15 +697,12 @@ static bool CreateSwapchain( unsigned& width, unsigned& height, int presentInter
         }
     }
 
-    if (presentQueueNodeIndex == UINT32_MAX)
+    for (uint32_t q = 0; q < queueCount && presentQueueNodeIndex == UINT32_MAX; ++q)
     {
-        for (uint32_t q = 0; q < queueCount; ++q)
+        if (supportsPresent[ q ] == VK_TRUE)
         {
-            if (supportsPresent[ q ] == VK_TRUE)
-            {
-                presentQueueNodeIndex = q;
-                break;
-            }
+            presentQueueNodeIndex = q;
+            break;
         }
     }
 
@@ -1026,7 +1023,7 @@ static bool CreateDevice()
 
     const VkFormat depthFormats[ 4 ] = { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D16_UNORM };
         
-    for (int i = 0; i < 4; ++i)
+    for (unsigned i = 0; i < 4; ++i)
     {
         VkFormatProperties formatProps;
         vkGetPhysicalDeviceFormatProperties( gPhysicalDevice, depthFormats[ i ], &formatProps );
@@ -1181,7 +1178,7 @@ static void CreateDescriptorSets()
     layoutBindingBuffer3.descriptorCount = 1;
     layoutBindingBuffer3.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    constexpr int bindingCount = 5;
+    constexpr unsigned bindingCount = 5;
     VkDescriptorSetLayoutBinding bindings[ bindingCount ] = { layoutBindingImage, layoutBindingSampler, layoutBindingBuffer, layoutBindingBuffer2, layoutBindingBuffer3 };
         
     VkDescriptorSetLayoutCreateInfo setCreateInfo = {};
@@ -1492,7 +1489,7 @@ void aeBeginFrame()
     bufferSet3.pTexelBufferView = &gUVSView;
     bufferSet3.dstBinding = 4;
 
-    constexpr int setCount = 5;
+    constexpr unsigned setCount = 5;
     VkWriteDescriptorSet sets[ setCount ] = { imageSet, samplerSet, bufferSet, bufferSet2, bufferSet3 };
     vkUpdateDescriptorSets( gDevice, setCount, sets, 0, nullptr );
 
