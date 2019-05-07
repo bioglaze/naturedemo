@@ -60,11 +60,16 @@ int main()
     
     aeFile waterVertFile = aeLoadFile( "water_vs.spv" );
     aeFile waterFragFile = aeLoadFile( "water_fs.spv" );
+    aeFile skyVertFile = aeLoadFile( "sky_vs.spv" );
+    aeFile skyFragFile = aeLoadFile( "sky_fs.spv" );
     aeFile gliderFile = aeLoadFile( "glider.tga" );
+
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
+    aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
-    aeMesh plane = aeCreatePlane();
-    
+    aeMesh water = aeCreatePlane();
+    aeMesh sky = aeCreatePlane();
+
     if (window.index == -1)
     {
         return 0;
@@ -116,7 +121,8 @@ int main()
         aeBeginFrame();
         aeBeginRenderPass();
 
-        aeRenderMesh( plane, waterShader );
+        aeRenderMesh( water, waterShader );
+        aeRenderMesh( sky, skyShader );
 
         aeEndRenderPass();
         aeEndFrame();
