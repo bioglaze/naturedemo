@@ -115,7 +115,7 @@ PFN_vkSetDebugUtilsObjectNameEXT setDebugUtilsObjectNameEXT;
 PFN_vkCmdBeginDebugUtilsLabelEXT CmdBeginDebugUtilsLabelEXT;
 PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;
 
-static void WriteMatrix( float m[ 16 ] )
+static void WriteMatrix( const float m[ 16 ] )
 {
     memcpy( ubo.uboData, m, 16 * 4 );
 }
@@ -515,9 +515,9 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
     return psoIndex;
 }
 
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader )
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip )
 {
-    Matrix localToWorld;
+    /*Matrix localToWorld;
     localToWorld.MakeIdentity();
     localToWorld.Translate( { 0, 0, 5 } );
     
@@ -531,6 +531,7 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader )
     Matrix::Multiply( localToWorld, worldToView, localToView );
     Matrix localToClip;
     Matrix::Multiply( localToView, viewToClip, localToClip );
+    WriteMatrix( localToClip.m );*/
     WriteMatrix( localToClip.m );
 
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };

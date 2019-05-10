@@ -9,7 +9,7 @@
 #include "vec3.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader );
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -84,7 +84,21 @@ int main()
     int lastMouseY = 0;
 
     Transform cameraTransform;
+    Matrix viewToClip;
+    viewToClip.MakeProjection( 45.0f, width / float( height ), 0.1f, 200.0f );
     
+    cameraTransform.localMatrix.MakeLookAt( { 0, 0, 0 }, { 0, 0, -400 }, { 0, 1, 0 } );
+
+    Matrix waterMatrix;
+    waterMatrix.Translate( { 0, 0, 5 } );
+    Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterMatrix );
+    Matrix::Multiply( waterMatrix, viewToClip, waterMatrix );
+
+    Matrix skyMatrix;
+    skyMatrix.Translate( { 1, 0, 5 } );
+    Matrix::Multiply( skyMatrix, cameraTransform.localMatrix, skyMatrix );
+    Matrix::Multiply( skyMatrix, viewToClip, skyMatrix );
+
     while (!shouldQuit)
     {
         aePumpWindowEvents( window );
@@ -115,14 +129,15 @@ int main()
             }
         }
 
-        TransformOffsetRotate( cameraTransform, { 0, 1, 0 }, -x / 20.0f );
-        TransformOffsetRotate( cameraTransform, { 1, 0, 0 }, y / 20.0f );
+        //TransformOffsetRotate( cameraTransform, { 0, 1, 0 }, -x / 20.0f );
+        //TransformOffsetRotate( cameraTransform, { 1, 0, 0 }, y / 20.0f );
+        //TransformSolveLocalMatrix( cameraTransform );
 
         aeBeginFrame();
         aeBeginRenderPass();
 
-        aeRenderMesh( water, waterShader );
-        aeRenderMesh( sky, skyShader );
+        aeRenderMesh( water, waterShader, waterMatrix );
+        //aeRenderMesh( sky, skyShader, skyMatrix );
 
         aeEndRenderPass();
         aeEndFrame();
