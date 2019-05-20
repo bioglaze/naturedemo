@@ -39,7 +39,7 @@ struct Ubo
     VkDeviceMemory uboMemory = VK_NULL_HANDLE;
     VkDescriptorBufferInfo uboDesc = {};
     uint8_t* uboData = nullptr;
-} ubo;
+} ubos[ 3 ];
 
 struct DepthStencil
 {
@@ -117,7 +117,7 @@ PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;
 
 static void WriteMatrix( const float m[ 16 ] )
 {
-    memcpy( ubo.uboData, m, 16 * 4 );
+    memcpy( ubos[ 0 ].uboData, m, 16 * 4 );
 }
 
 static const char* getObjectType( VkObjectType type )
@@ -360,7 +360,7 @@ static VkPipeline CreatePipeline( const aeShader& shader, BlendMode blendMode, C
     else if (cullMode == CullMode::Back)
     {
         rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
-}
+    }
     else if (cullMode == CullMode::Front)
     {
         rasterizationState.cullMode = VK_CULL_MODE_FRONT_BIT;
@@ -939,29 +939,32 @@ static void CreateUBO()
 {
     constexpr VkDeviceSize uboSize = 256 * 3 + 80 * 64;
 
-    VkBufferCreateInfo bufferInfo = {};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = uboSize;
-    bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    for (unsigned i = 0; i < 3; ++i)
+    {
+        VkBufferCreateInfo bufferInfo = {};
+        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bufferInfo.size = uboSize;
+        bufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
-    VK_CHECK( vkCreateBuffer( gDevice, &bufferInfo, nullptr, &ubo.ubo ) );
+        VK_CHECK( vkCreateBuffer( gDevice, &bufferInfo, nullptr, &ubos[ i ].ubo ) );
 
-    VkMemoryRequirements memReqs;
-    vkGetBufferMemoryRequirements( gDevice, ubo.ubo, &memReqs );
+        VkMemoryRequirements memReqs;
+        vkGetBufferMemoryRequirements( gDevice, ubos[ i ].ubo, &memReqs );
 
-    VkMemoryAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memReqs.size;
-    allocInfo.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
-    VK_CHECK( vkAllocateMemory( gDevice, &allocInfo, nullptr, &ubo.uboMemory ) );
+        VkMemoryAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        allocInfo.allocationSize = memReqs.size;
+        allocInfo.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
+        VK_CHECK( vkAllocateMemory( gDevice, &allocInfo, nullptr, &ubos[ i ].uboMemory ) );
 
-    VK_CHECK( vkBindBufferMemory( gDevice, ubo.ubo, ubo.uboMemory, 0 ) );
+        VK_CHECK( vkBindBufferMemory( gDevice, ubos[ i ].ubo, ubos[ i ].uboMemory, 0 ) );
 
-    ubo.uboDesc.buffer = ubo.ubo;
-    ubo.uboDesc.offset = 0;
-    ubo.uboDesc.range = uboSize;
+        ubos[ i ].uboDesc.buffer = ubos[ i ].ubo;
+        ubos[ i ].uboDesc.offset = 0;
+        ubos[ i ].uboDesc.range = uboSize;
     
-    VK_CHECK( vkMapMemory( gDevice, ubo.uboMemory, 0, uboSize, 0, (void **)&ubo.uboData ) );
+        VK_CHECK( vkMapMemory( gDevice, ubos[ i ].uboMemory, 0, uboSize, 0, (void **)&ubos[ i ].uboData ) );
+    }
 }
 
 static bool CreateDevice()
@@ -1471,7 +1474,7 @@ void aeBeginFrame()
     bufferSet.dstBinding = 2;
 
     VkDescriptorBufferInfo uboDesc = {};
-    uboDesc.buffer = ubo.ubo;
+    uboDesc.buffer = ubos[ 0 ].ubo;
     uboDesc.range = VK_WHOLE_SIZE;
 
     VkWriteDescriptorSet bufferSet2 = {};
