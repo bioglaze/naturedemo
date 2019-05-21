@@ -115,9 +115,9 @@ PFN_vkSetDebugUtilsObjectNameEXT setDebugUtilsObjectNameEXT;
 PFN_vkCmdBeginDebugUtilsLabelEXT CmdBeginDebugUtilsLabelEXT;
 PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;
 
-static void WriteMatrix( const float m[ 16 ] )
+static void WriteMatrix( const float m[ 16 ], unsigned uboIndex )
 {
-    memcpy( ubos[ 0 ].uboData, m, 16 * 4 );
+    memcpy( ubos[ uboIndex ].uboData, m, 16 * 4 );
 }
 
 static const char* getObjectType( VkObjectType type )
@@ -532,8 +532,10 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
     Matrix localToClip;
     Matrix::Multiply( localToView, viewToClip, localToClip );
     WriteMatrix( localToClip.m );*/
-    WriteMatrix( localToClip.m );
-
+    static unsigned uboIndex = 0;
+    WriteMatrix( localToClip.m, uboIndex );
+    uboIndex = (uboIndex + 1) % 3;
+    
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
 	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
 
@@ -544,7 +546,7 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
 	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, BlendMode::Off, CullMode::Back, DepthMode::NoneWriteOff, FillMode::Solid, Topology::Triangles ) ].pso );
 	vkCmdBindIndexBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VertexBufferGet( indices ), 0, VK_INDEX_TYPE_UINT16 );
 
-	unsigned pushConstant = 0;
+	unsigned pushConstant = uboIndex;
 	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( unsigned ), &pushConstant );
 
 	unsigned indirectDrawCount = 1;
