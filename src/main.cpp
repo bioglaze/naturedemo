@@ -2,11 +2,11 @@
 #include "file.hpp"
 #include "matrix.hpp"
 #include "mesh.hpp"
+#include "quaternion.hpp"
 #include "shader.hpp"
 #include "texture.hpp"
-#include "window.hpp"
-#include "quaternion.hpp"
 #include "vec3.hpp"
+#include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
 void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip );
@@ -28,6 +28,14 @@ void TransformSolveLocalMatrix( Transform& transform )
     transform.localRotation.GetMatrix( transform.localMatrix );
     transform.localMatrix.Scale( transform.localScale, transform.localScale, transform.localScale );
     transform.localMatrix.SetTranslation( transform.localPosition );
+}
+
+void TransformMoveForward( Transform& transform, float amount )
+{
+	if( amount != 0 )
+	{
+		transform.localPosition += transform.localRotation * Vec3( 0, 0, amount );
+	}
 }
 
 void TransformOffsetRotate( Transform& transform, const Vec3& axis, float angleDeg )
@@ -113,7 +121,15 @@ int main()
             {
                 eventsHandled = true;
             }
-            else if (event.type == aeWindowEvent::Type::KeyDown)
+			else if( event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::W)
+			{
+				TransformMoveForward( cameraTransform, 0.1f );
+			}
+			else if( event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::S )
+			{
+				TransformMoveForward( cameraTransform, -0.1f );
+			}
+			else if (event.type == aeWindowEvent::Type::KeyDown)
             {
                 shouldQuit = true;
             }
