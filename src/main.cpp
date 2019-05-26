@@ -9,7 +9,7 @@
 #include "vec3.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip );
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, unsigned uboIndex );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -136,8 +136,8 @@ int main()
         aeBeginFrame();
         aeBeginRenderPass();
 
-        aeRenderMesh( water, waterShader, waterMatrix );
-        //aeRenderMesh( sky, skyShader, skyMatrix );
+        aeRenderMesh( water, waterShader, waterMatrix, 0 );
+        aeRenderMesh( sky, skyShader, skyMatrix, 1 );
 
         aeEndRenderPass();
         aeEndFrame();

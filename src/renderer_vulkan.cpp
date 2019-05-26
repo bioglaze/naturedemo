@@ -515,7 +515,7 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
     return psoIndex;
 }
 
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip )
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, unsigned uboIndex )
 {
     /*Matrix localToWorld;
     localToWorld.MakeIdentity();
@@ -532,9 +532,7 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
     Matrix localToClip;
     Matrix::Multiply( localToView, viewToClip, localToClip );
     WriteMatrix( localToClip.m );*/
-    static unsigned uboIndex = 0;
     WriteMatrix( localToClip.m, uboIndex );
-    uboIndex = (uboIndex + 1) % 3;
     
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
 	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
