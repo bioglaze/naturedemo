@@ -1,5 +1,4 @@
 // This is an independent project of an individual developer. Dear PVS-Studio, please check it.
-
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include <assert.h>
 #include <stdio.h>
@@ -33,12 +32,18 @@ struct SwapchainResource
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
 };
 
+struct UboStruct
+{
+    Matrix localToClip;
+    float color[ 3 ];
+};
+
 struct Ubo
 {
     VkBuffer ubo = VK_NULL_HANDLE;
     VkDeviceMemory uboMemory = VK_NULL_HANDLE;
     VkDescriptorBufferInfo uboDesc = {};
-    uint8_t* uboData = nullptr;
+    UboStruct* uboData = nullptr;
 } ubos[ 3 ];
 
 struct DepthStencil
@@ -117,7 +122,7 @@ PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;
 
 static void WriteMatrix( const float m[ 16 ], unsigned uboIndex )
 {
-    memcpy( ubos[ uboIndex ].uboData, m, 16 * 4 );
+    memcpy( &ubos[ 0 ].uboData[ uboIndex ], m, 16 * 4 );
 }
 
 static const char* getObjectType( VkObjectType type )
