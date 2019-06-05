@@ -8,6 +8,8 @@ SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e mainVS wat
 SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S frag -e mainFS water.hlsl -o ../build/water_fs.spv)"; echo $$SHADER
 SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e mainVS sky.hlsl -o ../build/sky_vs.spv)"; echo $$SHADER
 SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S frag -e mainFS sky.hlsl -o ../build/sky_fs.spv)"; echo $$SHADER
+SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e mainVS ground.hlsl -o ../build/ground_vs.spv)"; echo $$SHADER
+SHADER := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S frag -e mainFS ground.hlsl -o ../build/ground_fs.spv)"; echo $$SHADER
 
 all:
 	$(CC) $(FLAGS) $(DEFINES) $(SANITIZERS) -c renderer_vulkan.cpp -o renderer_vulkan.o

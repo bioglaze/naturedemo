@@ -40,6 +40,6 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
 
 float4 mainFS( VSOutput vsOut ) : SV_Target
 {
-    return float4( 0.5f, 0.5f, 1, 1 );
+    return float4( 0, 1, 0, 1 );
     //return textures[ 0 ].Sample( sLinear, vsOut.uv );
 }

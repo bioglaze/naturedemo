@@ -70,13 +70,17 @@ int main()
     aeFile waterFragFile = aeLoadFile( "water_fs.spv" );
     aeFile skyVertFile = aeLoadFile( "sky_vs.spv" );
     aeFile skyFragFile = aeLoadFile( "sky_fs.spv" );
+    aeFile groundVertFile = aeLoadFile( "ground_vs.spv" );
+    aeFile groundFragFile = aeLoadFile( "ground_fs.spv" );
     aeFile gliderFile = aeLoadFile( "glider.tga" );
 
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
+    aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
     aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
     aeMesh water = aeCreatePlane();
     aeMesh sky = aeCreatePlane();
+    aeMesh ground = aeCreatePlane();
 
     if (window.index == -1)
     {
@@ -106,6 +110,11 @@ int main()
     skyMatrix.Translate( { 1, 0, 5 } );
     Matrix::Multiply( skyMatrix, cameraTransform.localMatrix, skyMatrix );
     Matrix::Multiply( skyMatrix, viewToClip, skyMatrix );
+
+    Matrix groundMatrix;
+    groundMatrix.Translate( { 1, 1, 5 } );
+    Matrix::Multiply( groundMatrix, cameraTransform.localMatrix, groundMatrix );
+    Matrix::Multiply( groundMatrix, viewToClip, groundMatrix );
 
     while (!shouldQuit)
     {
@@ -154,6 +163,7 @@ int main()
 
         aeRenderMesh( water, waterShader, waterMatrix, 0 );
         aeRenderMesh( sky, skyShader, skyMatrix, 1 );
+        aeRenderMesh( ground, groundShader, groundMatrix, 2 );
 
         aeEndRenderPass();
         aeEndFrame();
