@@ -9,7 +9,7 @@
 #include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, unsigned uboIndex );
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, unsigned uboIndex );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -73,7 +73,7 @@ int main()
     aeFile groundVertFile = aeLoadFile( "ground_vs.spv" );
     aeFile groundFragFile = aeLoadFile( "ground_fs.spv" );
     aeFile gliderFile = aeLoadFile( "glider.tga" );
-
+    
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
@@ -161,9 +161,9 @@ int main()
         aeBeginFrame();
         aeBeginRenderPass();
 
-        aeRenderMesh( water, waterShader, waterMatrix, 0 );
-        aeRenderMesh( sky, skyShader, skyMatrix, 1 );
-        aeRenderMesh( ground, groundShader, groundMatrix, 2 );
+        aeRenderMesh( water, waterShader, waterMatrix, gliderTex, 0 );
+        aeRenderMesh( sky, skyShader, skyMatrix, gliderTex, 1 );
+        aeRenderMesh( ground, groundShader, groundMatrix, gliderTex, 2 );
 
         aeEndRenderPass();
         aeEndFrame();

@@ -7,6 +7,7 @@
 #include "matrix.hpp"
 #include "mesh.hpp"
 #include "shader.hpp"
+#include "texture.hpp"
 #include "vertexbuffer.hpp"
 #include "vec3.hpp"
 #include "window.hpp"
@@ -520,23 +521,8 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
     return psoIndex;
 }
 
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, unsigned uboIndex )
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, unsigned uboIndex )
 {
-    /*Matrix localToWorld;
-    localToWorld.MakeIdentity();
-    localToWorld.Translate( { 0, 0, 5 } );
-    
-    Matrix localToView;
-    Matrix viewToClip;
-    viewToClip.MakeProjection( 45.0f, 16.0f / 9.0f, 0.1f, 400.0f );
-    
-    Matrix worldToView;
-    worldToView.MakeLookAt( { 0, 0, 0 }, { 0, 0, -400 }, { 0, 1, 0 } );
-    
-    Matrix::Multiply( localToWorld, worldToView, localToView );
-    Matrix localToClip;
-    Matrix::Multiply( localToView, viewToClip, localToClip );
-    WriteMatrix( localToClip.m );*/
     WriteMatrix( localToClip.m, uboIndex );
     
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
@@ -549,8 +535,8 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
 	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, BlendMode::Off, CullMode::Back, DepthMode::NoneWriteOff, FillMode::Solid, Topology::Triangles ) ].pso );
 	vkCmdBindIndexBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VertexBufferGet( indices ), 0, VK_INDEX_TYPE_UINT16 );
 
-	unsigned pushConstant = uboIndex;
-	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( unsigned ), &pushConstant );
+	unsigned pushConstants[ 2 ] = { uboIndex, 0 };
+	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( pushConstants ), &pushConstants[ 0 ] );
 
 	unsigned indirectDrawCount = 1;
 	vkCmdDrawIndexedIndirect( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gIndirectBuffer, 0, indirectDrawCount, sizeof( VkDrawIndexedIndirectCommand ) );
@@ -1242,7 +1228,7 @@ static void CreateDescriptorSets()
 
     VkPushConstantRange pushConstantRange = {};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    pushConstantRange.size = sizeof( int );
+    pushConstantRange.size = sizeof( int ) * 2;
 
     createInfo.pushConstantRangeCount = 1;
     createInfo.pPushConstantRanges = &pushConstantRange;

@@ -19,6 +19,7 @@ layout(set=0, binding=4) Buffer<float2> uvs : register(b4);
 layout(push_constant) cbuffer PushConstants
 {
     int uboIndex;
+    int textureIndex;
 } pushConstants;
 
 struct VSOutput
