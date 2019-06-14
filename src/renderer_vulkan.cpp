@@ -535,7 +535,7 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
 	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, BlendMode::Off, CullMode::Back, DepthMode::NoneWriteOff, FillMode::Solid, Topology::Triangles ) ].pso );
 	vkCmdBindIndexBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VertexBufferGet( indices ), 0, VK_INDEX_TYPE_UINT16 );
 
-	unsigned pushConstants[ 2 ] = { uboIndex, 0 };
+	unsigned pushConstants[ 2 ] = { uboIndex, texture.index };
 	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( pushConstants ), &pushConstants[ 0 ] );
 
 	unsigned indirectDrawCount = 1;

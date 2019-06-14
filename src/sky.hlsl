@@ -8,7 +8,7 @@ struct UniformData
     float3 color;
 };
 
-layout(set=0, binding=0) Texture2D<float4> textures[ 80 ] : register(t0);
+layout(set=0, binding=0) Texture2D<float4> textures[ 20 ] : register(t0);
 layout(set=0, binding=1) SamplerState sLinear : register(s0);
 layout(set=0, binding=2) Buffer<float3> positions : register(b2);
 layout(set=0, binding=3) cbuffer cbPerFrame : register(b3)
@@ -41,6 +41,5 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
 
 float4 mainFS( VSOutput vsOut ) : SV_Target
 {
-    return float4( 0.5f, 0.5f, 1, 1 );
-    //return textures[ 0 ].Sample( sLinear, vsOut.uv );
+    return textures[ pushConstants.textureIndex ].Sample( sLinear, vsOut.uv );
 }
