@@ -218,6 +218,34 @@ void Matrix::MakeProjection( float left, float right, float bottom, float top, f
     InitFrom( &proj[ 0 ] );
 }
 
+void Matrix::MakeRotationXYZ( float xDeg, float yDeg, float zDeg )
+{
+    const float deg2rad = float( M_PI ) / 180.0f;
+    const float sx = sinf( xDeg * deg2rad );
+    const float sy = sinf( yDeg * deg2rad );
+    const float sz = sinf( zDeg * deg2rad );
+    const float cx = cosf( xDeg * deg2rad );
+    const float cy = cosf( yDeg * deg2rad );
+    const float cz = cosf( zDeg * deg2rad );
+
+    m[ 0 ] = cy * cz;
+    m[ 1 ] = cz * sx * sy - cx * sz;
+    m[ 2 ] = cx * cz * sy + sx * sz;
+    m[ 3 ] = 0;
+    m[ 4 ] = cy * sz;
+    m[ 5 ] = cx * cz + sx * sy * sz;
+    m[ 6 ] = -cz * sx + cx * sy * sz;
+    m[ 7 ] = 0;
+    m[ 8 ] = -sy;
+    m[ 9 ] = cy * sx;
+    m[10 ] = cx * cy;
+    m[11 ] = 0;
+    m[12 ] = 0;
+    m[13 ] = 0;
+    m[14 ] = 0;
+    m[15 ] = 1;
+}
+
 void Matrix::Scale( float x, float y, float z )
 {
     Matrix scale;

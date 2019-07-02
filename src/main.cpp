@@ -1,3 +1,11 @@
+/*
+  Naturedemo
+  
+  Testing water and sky rendering etc.
+
+  Author: Timo Wiren
+  Modified: 2019-07-02
+ */
 #include <stdio.h>
 #include "file.hpp"
 #include "matrix.hpp"
@@ -102,6 +110,9 @@ int main()
     cameraTransform.localMatrix.MakeLookAt( { 0, 0, 0 }, { 0, 0, -400 }, { 0, 1, 0 } );
 
     Matrix waterMatrix;
+    Matrix rotationMatrix;
+    rotationMatrix.MakeRotationXYZ( 45, 0, 0 );
+    Matrix::Multiply( waterMatrix, rotationMatrix, waterMatrix );
     waterMatrix.Translate( { 0, 0, 5 } );
     Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterMatrix );
     Matrix::Multiply( waterMatrix, viewToClip, waterMatrix );

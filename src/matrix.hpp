@@ -12,6 +12,7 @@ struct alignas( 16 ) Matrix
     void MakeProjection( float fovDegrees, float aspect, float nearDepth, float farDepth );
     void MakeProjection( float left, float right, float bottom, float top, float nearDepth, float farDepth );
     void MakeLookAt( const struct Vec3& eye, const Vec3& center, const Vec3& up );
+    void MakeRotationXYZ( float xDeg, float yDeg, float zDeg );
     void Scale( float x, float y, float z );
     void SetTranslation( const Vec3& translation );
     void TransformPoint( const float vec[ 4 ], const Matrix& mat, float out[ 4 ] );
