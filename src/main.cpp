@@ -107,25 +107,15 @@ int main()
     Matrix viewToClip;
     viewToClip.MakeProjection( 45.0f, width / float( height ), 0.1f, 200.0f );
     
-    cameraTransform.localMatrix.MakeLookAt( { 0, 0, 0 }, { 0, 0, -400 }, { 0, 1, 0 } );
+    //cameraTransform.localMatrix.MakeLookAt( { 0, 0, 0 }, { 0, 0, -400 }, { 0, 1, 0 } );
+    TransformLookAt( cameraTransform, { 0, 0, 0 }, { 0, 0, -400 }, { 0, 1, 0 } );
 
     Matrix waterMatrix;
     Matrix rotationMatrix;
-    rotationMatrix.MakeRotationXYZ( 45, 0, 0 );
-    Matrix::Multiply( waterMatrix, rotationMatrix, waterMatrix );
-    waterMatrix.Translate( { 0, 0, 5 } );
-    Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterMatrix );
-    Matrix::Multiply( waterMatrix, viewToClip, waterMatrix );
 
     Matrix skyMatrix;
-    skyMatrix.Translate( { 1, 0, 5 } );
-    Matrix::Multiply( skyMatrix, cameraTransform.localMatrix, skyMatrix );
-    Matrix::Multiply( skyMatrix, viewToClip, skyMatrix );
 
     Matrix groundMatrix;
-    groundMatrix.Translate( { 1, 1, 5 } );
-    Matrix::Multiply( groundMatrix, cameraTransform.localMatrix, groundMatrix );
-    Matrix::Multiply( groundMatrix, viewToClip, groundMatrix );
 
     while (!shouldQuit)
     {
@@ -149,7 +139,7 @@ int main()
 			{
 				TransformMoveForward( cameraTransform, -0.1f );
 			}
-			else if (event.type == aeWindowEvent::Type::KeyDown)
+			else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::Escape)
             {
                 shouldQuit = true;
             }
@@ -162,12 +152,29 @@ int main()
                 deltaY = float( y - lastMouseY );
                 lastMouseX = x;
                 lastMouseY = y;
+                TransformOffsetRotate( cameraTransform, { 0, 1, 0 }, -x / 200.0f );
+                //TransformOffsetRotate( cameraTransform, { 1, 0, 0 }, y / 200.0f );
             }
         }
 
-        //TransformOffsetRotate( cameraTransform, { 0, 1, 0 }, -x / 20.0f );
-        //TransformOffsetRotate( cameraTransform, { 1, 0, 0 }, y / 20.0f );
-        //TransformSolveLocalMatrix( cameraTransform );
+        TransformSolveLocalMatrix( cameraTransform );
+
+        rotationMatrix.MakeRotationXYZ( 45, 0, 0 );
+        waterMatrix.MakeIdentity();
+        Matrix::Multiply( waterMatrix, rotationMatrix, waterMatrix );
+        waterMatrix.Translate( { 0, 0, 5 } );
+        Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterMatrix );
+        Matrix::Multiply( waterMatrix, viewToClip, waterMatrix );
+
+        skyMatrix.MakeIdentity();
+        skyMatrix.Translate( { 1, 0, 5 } );
+        Matrix::Multiply( skyMatrix, cameraTransform.localMatrix, skyMatrix );
+        Matrix::Multiply( skyMatrix, viewToClip, skyMatrix );
+
+        groundMatrix.MakeIdentity();
+        groundMatrix.Translate( { 1, 1, 5 } );
+        Matrix::Multiply( groundMatrix, cameraTransform.localMatrix, groundMatrix );
+        Matrix::Multiply( groundMatrix, viewToClip, groundMatrix );
 
         aeBeginFrame();
         aeBeginRenderPass();

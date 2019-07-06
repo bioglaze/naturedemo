@@ -220,7 +220,7 @@ void Matrix::MakeProjection( float left, float right, float bottom, float top, f
 
 void Matrix::MakeRotationXYZ( float xDeg, float yDeg, float zDeg )
 {
-    const float deg2rad = float( M_PI ) / 180.0f;
+    const float deg2rad = 3.1415926535f / 180.0f;
     const float sx = sinf( xDeg * deg2rad );
     const float sy = sinf( yDeg * deg2rad );
     const float sz = sinf( zDeg * deg2rad );

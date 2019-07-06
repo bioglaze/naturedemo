@@ -1,5 +1,4 @@
 // This is an independent project of an individual developer. Dear PVS-Studio, please check it.
-
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include "window.hpp"
 #include <Windows.h>
@@ -16,9 +15,53 @@ struct aeWindowImpl
     unsigned windowHeightWithoutTitleBar = 0;
     bool isGamePadConnected = false;
     HWND hwnd = nullptr;
+    aeWindowEvent::KeyCode keyMap[ 256 ];
 };
 
 aeWindowImpl windows[ 1 ];
+
+static void InitKeyMap()
+{
+    for (int keyIndex = 0; keyIndex < 256; ++keyIndex)
+    {
+        windows[ 0 ].keyMap[ keyIndex ] = aeWindowEvent::KeyCode::None;
+    }
+
+    windows[ 0 ].keyMap[ 13 ] = aeWindowEvent::KeyCode::Enter;
+    windows[ 0 ].keyMap[ 37 ] = aeWindowEvent::KeyCode::Left;
+    windows[ 0 ].keyMap[ 38 ] = aeWindowEvent::KeyCode::Up;
+    windows[ 0 ].keyMap[ 39 ] = aeWindowEvent::KeyCode::Right;
+    windows[ 0 ].keyMap[ 40 ] = aeWindowEvent::KeyCode::Down;
+    windows[ 0 ].keyMap[ 27 ] = aeWindowEvent::KeyCode::Escape;
+    windows[ 0 ].keyMap[ 32 ] = aeWindowEvent::KeyCode::Space;
+
+    windows[ 0 ].keyMap[ 65 ] = aeWindowEvent::KeyCode::A;
+    windows[ 0 ].keyMap[ 66 ] = aeWindowEvent::KeyCode::B;
+    windows[ 0 ].keyMap[ 67 ] = aeWindowEvent::KeyCode::C;
+    windows[ 0 ].keyMap[ 68 ] = aeWindowEvent::KeyCode::D;
+    windows[ 0 ].keyMap[ 69 ] = aeWindowEvent::KeyCode::E;
+    windows[ 0 ].keyMap[ 70 ] = aeWindowEvent::KeyCode::F;
+    windows[ 0 ].keyMap[ 71 ] = aeWindowEvent::KeyCode::G;
+    windows[ 0 ].keyMap[ 72 ] = aeWindowEvent::KeyCode::H;
+    windows[ 0 ].keyMap[ 73 ] = aeWindowEvent::KeyCode::I;
+    windows[ 0 ].keyMap[ 74 ] = aeWindowEvent::KeyCode::J;
+    windows[ 0 ].keyMap[ 75 ] = aeWindowEvent::KeyCode::K;
+    windows[ 0 ].keyMap[ 76 ] = aeWindowEvent::KeyCode::L;
+    windows[ 0 ].keyMap[ 77 ] = aeWindowEvent::KeyCode::M;
+    windows[ 0 ].keyMap[ 78 ] = aeWindowEvent::KeyCode::N;
+    windows[ 0 ].keyMap[ 79 ] = aeWindowEvent::KeyCode::O;
+    windows[ 0 ].keyMap[ 80 ] = aeWindowEvent::KeyCode::P;
+    windows[ 0 ].keyMap[ 81 ] = aeWindowEvent::KeyCode::Q;
+    windows[ 0 ].keyMap[ 82 ] = aeWindowEvent::KeyCode::R;
+    windows[ 0 ].keyMap[ 83 ] = aeWindowEvent::KeyCode::S;
+    windows[ 0 ].keyMap[ 84 ] = aeWindowEvent::KeyCode::T;
+    windows[ 0 ].keyMap[ 85 ] = aeWindowEvent::KeyCode::U;
+    windows[ 0 ].keyMap[ 86 ] = aeWindowEvent::KeyCode::V;
+    windows[ 0 ].keyMap[ 87 ] = aeWindowEvent::KeyCode::W;
+    windows[ 0 ].keyMap[ 88 ] = aeWindowEvent::KeyCode::X;
+    windows[ 0 ].keyMap[ 89 ] = aeWindowEvent::KeyCode::Y;
+    windows[ 0 ].keyMap[ 90 ] = aeWindowEvent::KeyCode::Z;
+}
 
 typedef DWORD WINAPI x_input_get_state( DWORD dwUserIndex, XINPUT_STATE* pState );
 
@@ -162,13 +205,13 @@ static LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPAR
     case WM_SYSKEYUP:
     case WM_KEYUP:
         windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::KeyUp;
-        //windows[ 0 ].events[ windows[ 0 ].eventCount ].keyCode = WindowGlobal::keyMap[ (unsigned)wParam ];
+        windows[ 0 ].events[ windows[ 0 ].eventCount - 1 ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
     break;
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
     {
         windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::KeyDown;
-        //windows[ 0 ].events[ windows[ 0 ].eventCount ].keyCode = WindowGlobal::keyMap[ (unsigned)wParam ];
+        windows[ 0 ].events[ windows[ 0 ].eventCount - 1 ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
     }
     break;
     case WM_LBUTTONDOWN:
@@ -265,6 +308,7 @@ aeWindow aeCreateWindow( unsigned width, unsigned height, const char* title )
     windows[ outWindow.index ].windowHeightWithoutTitleBar = rect.bottom;
     
     InitGamePad();
+    InitKeyMap();
 
     return outWindow;
 }
