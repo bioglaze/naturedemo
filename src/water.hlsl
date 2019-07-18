@@ -6,6 +6,7 @@ struct UniformData
 {
     matrix localToClip;
     float3 color;
+    float3 lightDir;
 };
 
 layout(set=0, binding=0) Texture2D<float4> textures[ 20 ] : register(t0);

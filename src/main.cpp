@@ -4,7 +4,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-07-02
+  Modified: 2019-07-18
  */
 #include <stdio.h>
 #include "file.hpp"
@@ -17,7 +17,7 @@
 #include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, unsigned uboIndex );
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, const Vec3& lightDir, unsigned uboIndex );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -179,9 +179,11 @@ int main()
         aeBeginFrame();
         aeBeginRenderPass();
 
-        aeRenderMesh( water, waterShader, waterMatrix, gliderTex, 0 );
-        aeRenderMesh( sky, skyShader, skyMatrix, gliderTex, 1 );
-        aeRenderMesh( ground, groundShader, groundMatrix, gliderTex, 2 );
+        const Vec3 lightDir{ 0, 1, 0 };
+
+        aeRenderMesh( water, waterShader, waterMatrix, gliderTex, lightDir, 0 );
+        aeRenderMesh( sky, skyShader, skyMatrix, gliderTex, lightDir, 1 );
+        aeRenderMesh( ground, groundShader, groundMatrix, gliderTex, lightDir, 2 );
 
         aeEndRenderPass();
         aeEndFrame();

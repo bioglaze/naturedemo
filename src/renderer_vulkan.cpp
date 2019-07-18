@@ -36,7 +36,8 @@ struct SwapchainResource
 struct UboStruct
 {
     Matrix localToClip;
-    float color[ 3 ];
+    Vec3 color;
+    Vec3 lightDir;
 };
 
 struct Ubo
@@ -121,9 +122,13 @@ PFN_vkSetDebugUtilsObjectNameEXT setDebugUtilsObjectNameEXT;
 PFN_vkCmdBeginDebugUtilsLabelEXT CmdBeginDebugUtilsLabelEXT;
 PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;
 
-static void WriteMatrix( const float m[ 16 ], unsigned uboIndex )
+static void UpdateUBO( const Matrix& localToClip, const Vec3& lightDir, unsigned uboIndex )
 {
-    memcpy( &ubos[ 0 ].uboData[ uboIndex ], m, 16 * 4 );
+    UboStruct ubo;
+    ubo.localToClip = localToClip;
+    ubo.lightDir = lightDir;
+
+    memcpy( &ubos[ 0 ].uboData[ uboIndex ], &ubo, sizeof( UboStruct ) );
 }
 
 static const char* getObjectType( VkObjectType type )
@@ -521,9 +526,9 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
     return psoIndex;
 }
 
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, unsigned uboIndex )
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, const Vec3& lightDir, unsigned uboIndex )
 {
-    WriteMatrix( localToClip.m, uboIndex );
+    UpdateUBO( localToClip, lightDir, uboIndex );
     
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
 	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
