@@ -173,11 +173,18 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
     VK_CHECK( vkCreateImageView( gDevice, &viewInfo, nullptr, &views[ outTexture.index ] ) );
     SetObjectName( gDevice, (uint64_t)views[ outTexture.index ], VK_OBJECT_TYPE_IMAGE_VIEW, file.path );
 
-    for (unsigned i = 0; i < 20; ++i)
+    static bool isFilled = false;
+
+    if (!isFilled)
     {
-        views[ i ] = views[ outTexture.index ];
+        for (unsigned i = 0; i < 20; ++i)
+        {
+            views[ i ] = views[ outTexture.index ];
+        }
+
+        isFilled = true;
     }
-    
+
     VkCommandBufferBeginInfo cmdBufInfo = {};
     cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 

@@ -4,7 +4,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-07-18
+  Modified: 2019-07-20
  */
 #include <stdio.h>
 #include "file.hpp"
@@ -17,7 +17,7 @@
 #include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, const Vec3& lightDir, unsigned uboIndex );
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -81,11 +81,13 @@ int main()
     aeFile groundVertFile = aeLoadFile( "ground_vs.spv" );
     aeFile groundFragFile = aeLoadFile( "ground_fs.spv" );
     aeFile gliderFile = aeLoadFile( "glider.tga" );
+    aeFile wave1File = aeLoadFile( "wave1.tga" );
     
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
     aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
+    aeTexture2D wave1Tex = aeLoadTexture( wave1File, aeTextureFlags::SRGB );
     aeMesh water = aeCreatePlane();
     aeMesh sky = aeCreatePlane();
     aeMesh ground = aeCreatePlane();
@@ -160,7 +162,9 @@ int main()
         TransformSolveLocalMatrix( cameraTransform );
 
         rotationMatrix.MakeRotationXYZ( 45, 0, 0 );
+
         waterMatrix.MakeIdentity();
+        waterMatrix.Scale( 2, 2, 2 );
         Matrix::Multiply( waterMatrix, rotationMatrix, waterMatrix );
         waterMatrix.Translate( { 0, 0, 5 } );
         Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterMatrix );
@@ -181,9 +185,9 @@ int main()
 
         const Vec3 lightDir{ 0, 1, 0 };
 
-        aeRenderMesh( water, waterShader, waterMatrix, gliderTex, lightDir, 0 );
-        aeRenderMesh( sky, skyShader, skyMatrix, gliderTex, lightDir, 1 );
-        aeRenderMesh( ground, groundShader, groundMatrix, gliderTex, lightDir, 2 );
+        aeRenderMesh( water, waterShader, waterMatrix, gliderTex, wave1Tex, lightDir, 0 );
+        aeRenderMesh( sky, skyShader, skyMatrix, gliderTex, gliderTex, lightDir, 1 );
+        aeRenderMesh( ground, groundShader, groundMatrix, gliderTex, gliderTex, lightDir, 2 );
 
         aeEndRenderPass();
         aeEndFrame();

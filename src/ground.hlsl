@@ -20,7 +20,9 @@ layout(set=0, binding=4) Buffer<float2> uvs : register(b4);
 layout(push_constant) cbuffer PushConstants
 {
     int uboIndex;
-    int textureIndex;
+    int texture1Index;
+    int texture2Index;
+    float timeSecs;
 } pushConstants;
 
 struct VSOutput
@@ -42,5 +44,5 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
 
 float4 mainFS( VSOutput vsOut ) : SV_Target
 {
-    return textures[ pushConstants.textureIndex ].Sample( sLinear, vsOut.uv );
+    return textures[ pushConstants.texture1Index ].Sample( sLinear, vsOut.uv );
 }
