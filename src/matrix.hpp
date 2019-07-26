@@ -7,6 +7,11 @@ struct alignas( 16 ) Matrix
     static void Multiply( const Matrix& ma, const Matrix& mb, Matrix& out );
 
     Matrix() noexcept { MakeIdentity(); }
+    Matrix( float xDeg, float yDeg, float zDeg )
+    {
+        MakeRotationXYZ( xDeg, yDeg, zDeg );
+    }
+
     void InitFrom( const float* mat );
     void MakeIdentity();
     void MakeProjection( float fovDegrees, float aspect, float nearDepth, float farDepth );
@@ -18,6 +23,7 @@ struct alignas( 16 ) Matrix
     void TransformPoint( const float vec[ 4 ], const Matrix& mat, float out[ 4 ] );
     void Transpose( Matrix& out ) const;
     void Translate( const Vec3& );
+    static void TransformDirection( const Vec3& dir, const Matrix& mat, Vec3* out );
 
     float m[ 16 ];
 };

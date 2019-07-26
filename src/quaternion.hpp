@@ -11,7 +11,9 @@ struct Quaternion
     void FromMatrix( const struct Matrix& mat );
     void GetMatrix( Matrix& outMatrix ) const;
     void Normalize();
-    
+    void FindOrthonormals( const Vec3& normal, Vec3& orthonormal1, Vec3& orthonormal2 ) const;
+    float FindTwist( const Vec3& axis ) const;
+
     float x, y, z, w;
 };
 

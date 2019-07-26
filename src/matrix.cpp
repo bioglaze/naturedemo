@@ -301,6 +301,13 @@ void Matrix::Translate( const Vec3& v )
     Multiply( *this, translateMatrix, *this );
 }
 
+void Matrix::TransformDirection( const Vec3& dir, const Matrix& mat, Vec3* out )
+{
+    out->x = mat.m[ 0 ] * dir.x + mat.m[ 4 ] * dir.y + mat.m[ 8 ] * dir.z;
+    out->y = mat.m[ 1 ] * dir.x + mat.m[ 5 ] * dir.y + mat.m[ 9 ] * dir.z;
+    out->z = mat.m[ 2 ] * dir.x + mat.m[ 6 ] * dir.y + mat.m[ 10 ] * dir.z;
+}
+
 void Vec3::Normalize()
 {
     const float invLen = 1.0f / sqrtf( x * x + y * y + z * z );
@@ -350,6 +357,56 @@ void Quaternion::FromAxisAngle( const Vec3& axis, float angleDeg )
     y = axis.y * sinAngle;
     z = axis.z * sinAngle;
     w = cosf( angleRad );
+}
+
+void Quaternion::FindOrthonormals( const Vec3& normal, Vec3& orthonormal1, Vec3& orthonormal2 ) const
+{
+    Matrix orthoX( 90, 0, 0 );
+
+    Vec3 ww;
+    Matrix::TransformDirection( normal, orthoX, &ww );
+    const float dot = Vec3::Dot( normal, ww );
+
+    if (fabsf( dot ) > 0.6f)
+    {
+        Matrix orthoY( 0, 90, 0 );
+        Matrix::TransformDirection( normal, orthoY, &ww );
+    }
+
+    ww = ww.Normalized();
+
+    orthonormal1 = Vec3::Cross( normal, ww );
+    orthonormal1 = orthonormal1.Normalized();
+    orthonormal2 = Vec3::Cross( normal, orthonormal1 );
+    orthonormal2 = orthonormal2.Normalized();
+}
+
+float Quaternion::FindTwist( const Vec3& axis ) const
+{
+    // Get the plane the axis is a normal of.
+    Vec3 orthonormal1, orthonormal2;
+    FindOrthonormals( axis, orthonormal1, orthonormal2 );
+
+    Vec3 transformed = *this * orthonormal1;
+
+    //project transformed vector onto plane
+    Vec3 flattened = transformed - axis * Vec3::Dot( transformed, axis );
+    flattened = flattened.Normalized();
+
+    // get angle between original vector and projected transform to get angle around normal
+    float dot = Vec3::Dot( orthonormal1, flattened );
+
+    if (dot < -1)
+    {
+        dot = -1;
+    }
+
+    if (dot > 1)
+    {
+        dot = 1;
+    }
+
+    return acosf( dot );
 }
 
 void Quaternion::Normalize()

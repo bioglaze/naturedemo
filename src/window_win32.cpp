@@ -7,7 +7,7 @@
 
 struct aeWindowImpl
 {
-    aeWindowEvent events[ 15 ];
+    aeWindowEvent events[ 30 ];
     unsigned eventCount = 0;
     unsigned windowWidth = 0;
     unsigned windowHeight = 0;
@@ -205,13 +205,13 @@ static LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPAR
     case WM_SYSKEYUP:
     case WM_KEYUP:
         windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::KeyUp;
-        windows[ 0 ].events[ windows[ 0 ].eventCount - 1 ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
+        windows[ 0 ].events[ windows[ 0 ].eventCount ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
     break;
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
     {
         windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::KeyDown;
-        windows[ 0 ].events[ windows[ 0 ].eventCount - 1 ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
+        windows[ 0 ].events[ windows[ 0 ].eventCount ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
     }
     break;
     case WM_LBUTTONDOWN:

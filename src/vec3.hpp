@@ -20,6 +20,11 @@ struct Vec3
         return Vec3( x - v.x, y - v.y, z - v.z );
     }
 
+    Vec3 operator*( float f ) const
+    {
+        return Vec3( x * f, y * f, z * f );
+    }
+
     Vec3 Normalized() const;
     void Normalize();
 
