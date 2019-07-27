@@ -50,6 +50,14 @@ static void TransformMoveForward( Transform& transform, float amount )
 	}
 }
 
+static void TransformMoveRight( Transform& transform, float amount )
+{
+    if (amount != 0)
+    {
+        transform.localPosition += transform.localRotation * Vec3( amount, 0, 0 );
+    }
+}
+
 static float IsAlmost( float f1, float f2 )
 {
     return fabsf( f1 - f2 ) < 0.0001f;
@@ -138,10 +146,10 @@ int main()
 
     Matrix waterMatrix;
     Matrix rotationMatrix;
-
     Matrix skyMatrix;
-
     Matrix groundMatrix;
+
+    bool isMouseDown = false;
 
     while (!shouldQuit)
     {
@@ -157,20 +165,41 @@ int main()
             {
                 eventsHandled = true;
             }
-			else if( event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::W)
+			else if( event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::S)
 			{
 				TransformMoveForward( cameraTransform, 0.5f );
 			}
-			else if( event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::S )
+			else if( event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::W)
 			{
 				TransformMoveForward( cameraTransform, -0.5f );
 			}
-			else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::Escape)
+            else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::A)
+            {
+                TransformMoveRight( cameraTransform, -0.5f );
+            }
+            else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::D)
+            {
+                TransformMoveRight( cameraTransform, 0.5f );
+            }
+            else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::Escape)
             {
                 shouldQuit = true;
             }
 
-            if (event.type == aeWindowEvent::Type::MouseMove)
+            if (event.type == aeWindowEvent::Type::Mouse1Down)
+            {
+                isMouseDown = true;
+                lastMouseX = event.x;
+                lastMouseY = height - event.y;
+            }
+            else if (event.type == aeWindowEvent::Type::Mouse1Up)
+            {
+                isMouseDown = false;
+                lastMouseX = event.x;
+                lastMouseY = height - event.y;
+            }
+
+            if (event.type == aeWindowEvent::Type::MouseMove && isMouseDown)
             {
                 x = event.x;
                 y = height - event.y;

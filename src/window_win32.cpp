@@ -4,11 +4,14 @@
 #include <Windows.h>
 #include <xinput.h>
 #include <crtdbg.h>
+#include <assert.h>
+
+constexpr int EventStackSize = 100;
 
 struct aeWindowImpl
 {
-    aeWindowEvent events[ 30 ];
-    unsigned eventCount = 0;
+    aeWindowEvent events[ EventStackSize ];
+    int eventIndex = -1;
     unsigned windowWidth = 0;
     unsigned windowHeight = 0;
     unsigned windowWidthWithoutTitleBar = 0;
@@ -124,6 +127,14 @@ static float ProcessGamePadStickValue( SHORT value, SHORT deadZoneThreshold )
     return 0;
 }
 
+static void IncEventIndex()
+{
+    if (windows[ 0 ].eventIndex < EventStackSize - 1)
+    {
+        ++windows[ 0 ].eventIndex;
+    }
+}
+
 static void PumpGamePadEvents()
 {
     XINPUT_STATE controllerState;
@@ -135,124 +146,145 @@ static void PumpGamePadEvents()
         float avgX = ProcessGamePadStickValue( pad->sThumbLX, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE );
         float avgY = ProcessGamePadStickValue( pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE );
 
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadLeftThumbState;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].gamePadThumbX = avgX;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].gamePadThumbY = avgY;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadLeftThumbState;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].gamePadThumbX = avgX;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].gamePadThumbY = avgY;
 
         avgX = ProcessGamePadStickValue( pad->sThumbRX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE );
         avgY = ProcessGamePadStickValue( pad->sThumbRY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE );
 
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadRightThumbState;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].gamePadThumbX = avgX;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].gamePadThumbY = avgY;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadRightThumbState;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].gamePadThumbX = avgX;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].gamePadThumbY = avgY;
 
         if ((pad->wButtons & XINPUT_GAMEPAD_DPAD_UP) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonDPadUp;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonDPadUp;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonDPadDown;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonDPadDown;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonDPadLeft;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonDPadLeft;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonDPadRight;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonDPadRight;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_A) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonA;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonA;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_B) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonB;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonB;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_X) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonX;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonX;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_Y) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonY;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonY;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonLeftShoulder;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonLeftShoulder;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonRightShoulder;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonRightShoulder;
 
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_START) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonStart;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonStart;
         }
         if ((pad->wButtons & XINPUT_GAMEPAD_BACK) != 0)
         {
-            windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::GamePadButtonBack;
+            windows[ 0 ].events[ windows[ 0 ].eventIndex++ ].type = aeWindowEvent::Type::GamePadButtonBack;
         }
     }
 }
 
 static LRESULT CALLBACK WindowProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam )
 {
+    assert( windows[ 0 ].eventIndex < 100 );
+
     switch (message)
     {
     case WM_SYSKEYUP:
     case WM_KEYUP:
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::KeyUp;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
+        IncEventIndex();
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = aeWindowEvent::Type::KeyUp;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
     break;
     case WM_KEYDOWN:
     case WM_SYSKEYDOWN:
     {
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::KeyDown;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
+        IncEventIndex();
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = aeWindowEvent::Type::KeyDown;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].keyCode = windows[ 0 ].keyMap[ (unsigned)wParam ];
     }
     break;
     case WM_LBUTTONDOWN:
     case WM_LBUTTONUP:
     {
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = message == WM_LBUTTONDOWN ? aeWindowEvent::Type::Mouse1Down : aeWindowEvent::Type::Mouse1Up;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].x = LOWORD( lParam );
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
+        IncEventIndex();
+
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = message == WM_LBUTTONDOWN ? aeWindowEvent::Type::Mouse1Down : aeWindowEvent::Type::Mouse1Up;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].x = LOWORD( lParam );
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
     }
     break;
+    case WM_NCMOUSELEAVE:
+        IncEventIndex();
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = aeWindowEvent::Type::Mouse1Up;
+        return 0;
+        break;
     case WM_RBUTTONDOWN:
     case WM_RBUTTONUP:
     {
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = message == WM_RBUTTONDOWN ? aeWindowEvent::Type::Mouse2Down : aeWindowEvent::Type::Mouse2Up;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].x = LOWORD( lParam );
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
+        IncEventIndex();
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = message == WM_RBUTTONDOWN ? aeWindowEvent::Type::Mouse2Down : aeWindowEvent::Type::Mouse2Up;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].x = LOWORD( lParam );
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
     }
     break;
     case WM_MBUTTONDOWN:
     case WM_MBUTTONUP:
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = message == WM_MBUTTONDOWN ? aeWindowEvent::Type::MouseMiddleDown : aeWindowEvent::Type::MouseMiddleUp;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].x = LOWORD( lParam );
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
-    break;
+        IncEventIndex();
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = message == WM_MBUTTONDOWN ? aeWindowEvent::Type::MouseMiddleDown : aeWindowEvent::Type::MouseMiddleUp;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].x = LOWORD( lParam );
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
+        break;
 	case WM_MOUSEWHEEL:
 	{
 		int delta = GET_WHEEL_DELTA_WPARAM( wParam );
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = delta < 0 ? aeWindowEvent::Type::MouseWheelScrollDown : aeWindowEvent::Type::MouseWheelScrollUp;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].x = LOWORD( lParam );
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
-	}
+        IncEventIndex();
+
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = delta < 0 ? aeWindowEvent::Type::MouseWheelScrollDown : aeWindowEvent::Type::MouseWheelScrollUp;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].x = LOWORD( lParam );
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
+    }
 	break;
 	case WM_MOUSEMOVE:
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::MouseMove;
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].x = LOWORD( lParam );
-        windows[ 0 ].events[ windows[ 0 ].eventCount ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
+        IncEventIndex();
+
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = aeWindowEvent::Type::MouseMove;
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].x = LOWORD( lParam );
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].y = windows[ 0 ].windowHeightWithoutTitleBar - HIWORD( lParam );
+        return 0;
+        //printf( "mouse move\n" );
     break;
     case WM_CLOSE:
-        windows[ 0 ].events[ windows[ 0 ].eventCount++ ].type = aeWindowEvent::Type::Close;
+        IncEventIndex();
+
+        windows[ 0 ].events[ windows[ 0 ].eventIndex ].type = aeWindowEvent::Type::Close;
         windows[ 0 ].events[ 1 ].type = aeWindowEvent::Type::Close;
-    break;
+        break;
     }
 
     return DefWindowProc( hWnd, message, wParam, lParam );
@@ -339,13 +371,14 @@ const aeWindowEvent& aePopWindowEvent( const aeWindow& window )
 {
     aeWindowImpl& win = windows[ window.index ];
 
-    if (win.eventCount == 0)
+    if (win.eventIndex == -1)
     {
         win.events[ 0 ].type = aeWindowEvent::Type::Empty;
         return win.events[ 0 ];
     }
 
-    return win.events[ win.eventCount-- ];
+    --win.eventIndex;
+    return win.events[ win.eventIndex + 1 ];
 }
 
 void aeDestroyWindow( aeWindow /*window*/ )
