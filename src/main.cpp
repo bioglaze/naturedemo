@@ -218,15 +218,15 @@ int main()
         rotationMatrix.MakeRotationXYZ( 0, 0, 0 );
 
         waterMatrix.MakeIdentity();
-        waterMatrix.Scale( 2, 2, 2 );
+        waterMatrix.Scale( 14, 2, 24 );
         Matrix::Multiply( waterMatrix, rotationMatrix, waterMatrix );
-        waterMatrix.Translate( { 0, -2, 5 } );
+        waterMatrix.Translate( { 0, -4, 5 } );
         Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterMatrix );
         Matrix::Multiply( waterMatrix, viewToClip, waterMatrix );
 
         skyMatrix.MakeIdentity();
-        skyMatrix.Scale( 2, 2, 2 );
-        skyMatrix.Translate( { 0, 2, 5 } );
+        skyMatrix.Scale( 18, 2, 28 );
+        skyMatrix.Translate( { 0, 4, 5 } );
         Matrix::Multiply( skyMatrix, cameraTransform.localMatrix, skyMatrix );
         Matrix::Multiply( skyMatrix, viewToClip, skyMatrix );
 

@@ -1,5 +1,4 @@
 // This is an independent project of an individual developer. Dear PVS-Studio, please check it.
-
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include "texture.hpp"
 #include <assert.h>
@@ -89,6 +88,7 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
     
     aeTexture2D outTexture;
     outTexture.index = textureCount++;
+    assert( outTexture.index < textureCount );
     aeTextureImpl& tex = textures[ outTexture.index ];
 
     int bytesPerPixel = 4;

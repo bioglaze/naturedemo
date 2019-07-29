@@ -541,7 +541,7 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
 	vkCmdBindIndexBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VertexBufferGet( indices ), 0, VK_INDEX_TYPE_UINT16 );
 
     static float timeSecs = 0;
-    timeSecs += 0.005f;
+    timeSecs += 0.0005f;
 
     struct PushConstants
     {

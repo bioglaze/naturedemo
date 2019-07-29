@@ -18,7 +18,7 @@ struct aeWindowImpl
     unsigned windowHeightWithoutTitleBar = 0;
     bool isGamePadConnected = false;
     HWND hwnd = nullptr;
-    aeWindowEvent::KeyCode keyMap[ 256 ];
+    aeWindowEvent::KeyCode keyMap[ 256 ] = {};
 };
 
 aeWindowImpl windows[ 1 ];
