@@ -13,7 +13,7 @@ struct aeWindowImpl
 {
     aeWindowEvent events[ 15 ];
     xcb_key_symbols_t* keySymbols = nullptr;
-    int eventCount = 0;
+    int eventIndex = -1;
 };
 
 struct GamePad
@@ -44,7 +44,15 @@ struct GamePad
 GamePad gamePad;
 aeWindowImpl windows[ 10 ];
 
-float ProcessGamePadStickValue( short value, short deadZoneThreshold )
+static void IncEventIndex()
+{
+    if (windows[ 0 ].eventIndex < 15 - 1)
+    {
+        ++windows[ 0 ].eventIndex;
+    }
+}
+
+static float ProcessGamePadStickValue( short value, short deadZoneThreshold )
 {
     float result = 0;
         
@@ -207,13 +215,14 @@ const aeWindowEvent& aePopWindowEvent( const aeWindow& window )
 {
     aeWindowImpl& win = windows[ window.index ];
 
-    if (win.eventCount == 0)
+    if (win.eventIndex == -1)
     {
         win.events[ 0 ].type = aeWindowEvent::Type::Empty;
         return win.events[ 0 ];
     }
-    
-    return win.events[ win.eventCount-- ];
+
+    --win.eventIndex;
+    return win.events[ win.eventIndex + 1 ];
 }
 
 void aePumpWindowEvents( const aeWindow& window )
@@ -222,7 +231,7 @@ void aePumpWindowEvents( const aeWindow& window )
     
     while ((event = xcb_poll_for_event( window.connection )))
     {
-        if (windows[ window.index ].eventCount >= 14)
+        if (windows[ window.index ].eventIndex >= 14)
         {
             free( event );
             return;
@@ -233,41 +242,48 @@ void aePumpWindowEvents( const aeWindow& window )
         if (responseType == XCB_BUTTON_PRESS || responseType == XCB_BUTTON_RELEASE)
         {
             xcb_button_press_event_t* bp = (xcb_button_press_event_t *)event;
-            printf("button press: %d\n", bp->detail);
+
             if (bp->detail == 2)
             {
-                windows[ window.index ].events[ windows[ window.index ].eventCount++ ].type = responseType == XCB_BUTTON_RELEASE ? aeWindowEvent::Type::MouseMiddleUp : aeWindowEvent::Type::MouseMiddleDown;
+                IncEventIndex();
+                windows[ window.index ].events[ windows[ window.index ].eventIndex ].type = responseType == XCB_BUTTON_RELEASE ? aeWindowEvent::Type::MouseMiddleUp : aeWindowEvent::Type::MouseMiddleDown;
             }
             else if (bp->detail == 3)
             {
-                windows[ window.index ].events[ windows[ window.index ].eventCount++ ].type = responseType == XCB_BUTTON_RELEASE ? aeWindowEvent::Type::Mouse2Up : aeWindowEvent::Type::Mouse2Down;
+                IncEventIndex();
+                windows[ window.index ].events[ windows[ window.index ].eventIndex ].type = responseType == XCB_BUTTON_RELEASE ? aeWindowEvent::Type::Mouse2Up : aeWindowEvent::Type::Mouse2Down;
             }
             else
             {
-                windows[ window.index ].events[ windows[ window.index ].eventCount++ ].type = responseType == XCB_BUTTON_RELEASE ? aeWindowEvent::Type::Mouse1Up : aeWindowEvent::Type::Mouse1Down;
+                IncEventIndex();
+                windows[ window.index ].events[ windows[ window.index ].eventIndex ].type = responseType == XCB_BUTTON_RELEASE ? aeWindowEvent::Type::Mouse1Up : aeWindowEvent::Type::Mouse1Down;
             }
             
-            windows[ window.index ].events[ windows[ window.index ].eventCount ].x = bp->event_x;
-            windows[ window.index ].events[ windows[ window.index ].eventCount ].y = bp->event_y;
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].x = bp->event_x;
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].y = bp->event_y;
         }
         else if (responseType == XCB_KEY_PRESS)
         {
             xcb_key_press_event_t* kp = (xcb_key_press_event_t *)event;
             printf("key code: %d, modifiers: %d\n", kp->event, kp->state);
+            IncEventIndex();
 
-            windows[ window.index ].events[ windows[ window.index ].eventCount++ ].type = aeWindowEvent::Type::KeyDown;
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].type = aeWindowEvent::Type::KeyDown;
         }
         else if (responseType == XCB_KEY_RELEASE)
         {
             //xcb_key_press_event_t* kp = (xcb_key_press_event_t *)event;
-            windows[ window.index ].events[ windows[ window.index ].eventCount++ ].type = aeWindowEvent::Type::KeyUp;
+            IncEventIndex();
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].type = aeWindowEvent::Type::KeyUp;
         }
         else if (responseType == XCB_MOTION_NOTIFY)
         {
+            IncEventIndex();
+
             xcb_motion_notify_event_t* motion = (xcb_motion_notify_event_t *)event;
-            windows[ window.index ].events[ windows[ window.index ].eventCount++ ].type = aeWindowEvent::Type::MouseMove;
-            windows[ window.index ].events[ windows[ window.index ].eventCount ].x = motion->event_x;
-            windows[ window.index ].events[ windows[ window.index ].eventCount ].y = motion->event_y;
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].type = aeWindowEvent::Type::MouseMove;
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].x = motion->event_x;
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].y = motion->event_y;
         }
         
         free( event );
@@ -290,87 +306,97 @@ void aePumpWindowEvents( const aeWindow& window )
         {
             if (j.number == gamePad.buttonA && j.value > 0)
             {
-                win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonA;
+                IncEventIndex();
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonA;
             }
             else if (j.number == gamePad.buttonB && j.value > 0)
             {
-                win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonB;
+                IncEventIndex();
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonB;
             }
             else if (j.number == gamePad.buttonX && j.value > 0)
             {
-                win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonX;
+                IncEventIndex();
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonX;
             }
             else if (j.number == gamePad.buttonY && j.value > 0)
             {
-                win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonY;
+                IncEventIndex();
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonY;
             }
             else if (j.number == gamePad.buttonStart && j.value > 0)
             {
-                win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonStart;
+                IncEventIndex();
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonStart;
             }
             else if (j.number == gamePad.buttonBack && j.value > 0)
             {
-                win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonBack;
+                IncEventIndex();
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonBack;
             }
         }
         else if (j.type == JS_EVENT_AXIS)
         {
             if (j.number == gamePad.leftThumbX)
             {
+                IncEventIndex();
                 const float x = ProcessGamePadStickValue( j.value, gamePad.deadZone );
-                win.events[ win.eventCount ].type = aeWindowEvent::Type::GamePadLeftThumbState;
-                win.events[ win.eventCount ].gamePadThumbX = x;
-                win.events[ win.eventCount ].gamePadThumbY = gamePad.lastLeftThumbY;
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadLeftThumbState;
+                win.events[ win.eventIndex ].gamePadThumbX = x;
+                win.events[ win.eventIndex ].gamePadThumbY = gamePad.lastLeftThumbY;
                 gamePad.lastLeftThumbX = x;
-                ++win.eventCount;
             }
             else if (j.number == gamePad.leftThumbY)
             {
+                IncEventIndex();
                 const float y = ProcessGamePadStickValue( j.value, gamePad.deadZone );
-                win.events[ win.eventCount ].type = aeWindowEvent::Type::GamePadLeftThumbState;
-                win.events[ win.eventCount ].gamePadThumbX = gamePad.lastLeftThumbX;
-                win.events[ win.eventCount ].gamePadThumbY = -y;
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadLeftThumbState;
+                win.events[ win.eventIndex ].gamePadThumbX = gamePad.lastLeftThumbX;
+                win.events[ win.eventIndex ].gamePadThumbY = -y;
                 gamePad.lastLeftThumbY = -y;
-                ++win.eventCount;
             }
             else if (j.number == gamePad.rightThumbX)
             {
+                IncEventIndex();
                 const float x = ProcessGamePadStickValue( j.value, gamePad.deadZone );
-                win.events[ win.eventCount ].type = aeWindowEvent::Type::GamePadRightThumbState;
-                win.events[ win.eventCount ].gamePadThumbX = x;
-                win.events[ win.eventCount ].gamePadThumbY = gamePad.lastRightThumbY;
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadRightThumbState;
+                win.events[ win.eventIndex ].gamePadThumbX = x;
+                win.events[ win.eventIndex ].gamePadThumbY = gamePad.lastRightThumbY;
                 gamePad.lastRightThumbX = x;
-                ++win.eventCount;
             }
             else if (j.number == gamePad.rightThumbY)
             {
+                IncEventIndex();
                 const float y = ProcessGamePadStickValue( j.value, gamePad.deadZone );
-                win.events[ win.eventCount ].type = aeWindowEvent::Type::GamePadRightThumbState;
-                win.events[ win.eventCount ].gamePadThumbX = gamePad.lastRightThumbX;
-                win.events[ win.eventCount ].gamePadThumbY = -y;
+                win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadRightThumbState;
+                win.events[ win.eventIndex ].gamePadThumbX = gamePad.lastRightThumbX;
+                win.events[ win.eventIndex ].gamePadThumbY = -y;
                 gamePad.lastRightThumbY = -y;
-                ++win.eventCount;
             }
             else if (j.number == gamePad.dpadXaxis)
             {
                 if (j.value > 0)
                 {
-                    win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonDPadRight;
+                    IncEventIndex();
+                    win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonDPadRight;
                 }
                 if (j.value < 0)
                 {
-                    win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonDPadLeft;
+                    IncEventIndex();
+                    win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonDPadLeft;
                 }
             }
             else if (j.number == gamePad.dpadYaxis)
             {
                 if (j.value < 0)
                 {
-                    win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonDPadUp;
+                    IncEventIndex();
+                    win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonDPadUp;
                 }
                 if (j.value > 0)
                 {
-                    win.events[ win.eventCount++ ].type = aeWindowEvent::Type::GamePadButtonDPadDown;
+                    IncEventIndex();
+                    win.events[ win.eventIndex ].type = aeWindowEvent::Type::GamePadButtonDPadDown;
                 }
             }
         }

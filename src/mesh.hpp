@@ -7,3 +7,4 @@ struct aeMesh
 
 aeMesh aeCreatePlane();
 const struct VertexBuffer& GetIndices( const aeMesh& mesh );
+aeMesh aeLoadMeshFile( const struct aeFile& a3dFile );

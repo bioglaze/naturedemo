@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-07-26
+  Modified: 2019-07-30
  */
 #include <stdio.h>
 #include <math.h>
@@ -209,7 +209,11 @@ int main()
                 lastMouseY = y;
 
                 TransformOffsetRotate( cameraTransform, { 0, 1, 0 }, -deltaX / 50.0f );
+#if VK_USE_PLATFORM_XCB_KHR
+                TransformOffsetRotate( cameraTransform, { 1, 0, 0 }, deltaY / 50.0f );
+#else
                 TransformOffsetRotate( cameraTransform, { 1, 0, 0 }, -deltaY / 50.0f );
+#endif
             }
         }
 

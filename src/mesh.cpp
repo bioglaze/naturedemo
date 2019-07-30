@@ -1,8 +1,9 @@
 // This is an independent project of an individual developer. Dear PVS-Studio, please check it.
-
 // PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 #include "mesh.hpp"
+#include "file.hpp"
 #include "vertexbuffer.hpp"
+#include <stdio.h>
 
 struct MeshImpl
 {
@@ -45,6 +46,45 @@ aeMesh aeCreatePlane()
     meshes[ outMesh.index ].uvs = CreateVertexBuffer( uvs, sizeof( uvs ), BufferType::Float2, BufferUsage::Vertex, "uvs" );
     meshes[ outMesh.index ].indices = CreateVertexBuffer( indices, sizeof( indices ), BufferType::Ushort, BufferUsage::Index, "indices" );
 
+    return outMesh;
+}
+
+aeMesh aeLoadMeshFile( const struct aeFile& a3dFile )
+{    
+    aeMesh outMesh;
+    outMesh.index = meshCount++;
+
+    unsigned char* pointer = &a3dFile.data[ 5 ];
+    pointer += 4;
+
+    //meshes[ outMesh.index ].aabbMin.x = (float)(*pointer);
+    pointer += 4;
+    //meshes[ outMesh.index ].subMeshes[ m ].aabbMin.y = (float)(*pointer);
+    pointer += 4;
+    //meshes[ outMesh.index ].subMeshes[ m ].aabbMin.z = (float)(*pointer);
+
+    pointer += 4;
+    //meshes[ outMesh.index ].subMeshes[ m ].aabbMax.x = (float)(*pointer);
+    pointer += 4;
+    //meshes[ outMesh.index ].subMeshes[ m ].aabbMax.y = (float)(*pointer);
+    pointer += 4;
+    //meshes[ outMesh.index ].subMeshes[ m ].aabbMax.z = (float)(*pointer);
+
+    pointer += 4;
+    int faceCount = (int)(*pointer);
+    printf("faceCount: %d\n", faceCount);
+    pointer += 4;
+    meshes[ outMesh.index ].indices = CreateVertexBuffer( pointer, faceCount * 2 * 3, BufferType::Ushort, BufferUsage::Index, "indices" );
+    pointer += faceCount * 2 * 3;
+    int vertexCount = (int)(*pointer);
+    pointer += 4;
+    meshes[ outMesh.index ].positions = CreateVertexBuffer( pointer, vertexCount * 3 * 4, BufferType::Float3, BufferUsage::Vertex, "positions" );
+    pointer += vertexCount * 3 * 4;
+    meshes[ outMesh.index ].uvs = CreateVertexBuffer( pointer, vertexCount * 2 * 4, BufferType::Float2, BufferUsage::Vertex, "uvs" );
+    pointer += vertexCount * 2 * 4;
+    //meshes[ outMesh.index ].normals = CreateVertexBuffer( pointer, vertexCount * 3 * 4, BufferType::Float3, BufferUsage::Vertex, "normals" );
+    pointer += vertexCount * 3 * 4;
+    
     return outMesh;
 }
 
