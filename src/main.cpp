@@ -116,6 +116,7 @@ int main()
     aeFile gliderFile = aeLoadFile( "glider.tga" );
     aeFile wave1File = aeLoadFile( "wave1.tga" );
     aeFile noiseFile = aeLoadFile( "perlin_noise.tga" );
+    aeFile planeFile = aeLoadFile( "plane.a3d" );
     
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
@@ -125,7 +126,7 @@ int main()
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
     aeTexture2D sky1Tex = wave1Tex;
     aeTexture2D sky2Tex = wave1Tex;
-    aeMesh water = aeCreatePlane();
+    aeMesh water = aeLoadMeshFile( planeFile );//aeCreatePlane();
     aeMesh sky = aeCreatePlane();
     aeMesh ground = aeCreatePlane();
 

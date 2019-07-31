@@ -54,7 +54,7 @@ aeMesh aeLoadMeshFile( const struct aeFile& a3dFile )
     aeMesh outMesh;
     outMesh.index = meshCount++;
 
-    unsigned char* pointer = &a3dFile.data[ 5 ];
+    unsigned char* pointer = &a3dFile.data[ 8 ];
     pointer += 4;
 
     //meshes[ outMesh.index ].aabbMin.x = (float)(*pointer);
@@ -71,12 +71,12 @@ aeMesh aeLoadMeshFile( const struct aeFile& a3dFile )
     //meshes[ outMesh.index ].subMeshes[ m ].aabbMax.z = (float)(*pointer);
 
     pointer += 4;
-    int faceCount = (int)(*pointer);
+    const unsigned faceCount = *((unsigned*)pointer);
     printf("faceCount: %d\n", faceCount);
     pointer += 4;
     meshes[ outMesh.index ].indices = CreateVertexBuffer( pointer, faceCount * 2 * 3, BufferType::Ushort, BufferUsage::Index, "indices" );
     pointer += faceCount * 2 * 3;
-    int vertexCount = (int)(*pointer);
+    const unsigned vertexCount = *((unsigned*)pointer);
     pointer += 4;
     meshes[ outMesh.index ].positions = CreateVertexBuffer( pointer, vertexCount * 3 * 4, BufferType::Float3, BufferUsage::Vertex, "positions" );
     pointer += vertexCount * 3 * 4;
