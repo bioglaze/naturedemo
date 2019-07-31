@@ -33,7 +33,7 @@ static aeTextureImpl textures[ 100 ];
 static int textureCount = 0;
 static VkCommandBuffer texCommandBuffer;
 
-static void LoadTGA( const aeFile& file, unsigned& outWidth, unsigned& outHeight, unsigned &outDataBeginOffset )
+static void LoadTGA( const aeFile& file, unsigned& outWidth, unsigned& outHeight, unsigned &outDataBeginOffset, unsigned& outBitsPerPixel )
 {
     unsigned char* data = (unsigned char*)file.data;
 
@@ -62,6 +62,8 @@ static void LoadTGA( const aeFile& file, unsigned& outWidth, unsigned& outHeight
     outHeight = height;
 
     offs += 4; // specEnd
+    outBitsPerPixel = data[ offs - 2 ];
+
     outDataBeginOffset = offs;
 }
 
@@ -98,9 +100,22 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
 
     if (strstr( file.path, ".tga" ) || strstr( file.path, ".TGA" ))
     {
-        LoadTGA( file, tex.width, tex.height, dataBeginOffset );
+        unsigned bitsPerPixel = 32;
+        LoadTGA( file, tex.width, tex.height, dataBeginOffset, bitsPerPixel );
+        printf("bitsPerPixel: %d\n", bitsPerPixel);
+        bytesPerPixel = bitsPerPixel / 8;
+
+        /*if (bytesPerPixel == 3)
+        {
+            format = VK_FORMAT_R8G8B8_SRGB;
+            }*/
+        
         mipLevelCount = (flags & aeTextureFlags::GenerateMips) ? GetMipLevelCount( tex.width, tex.height ) : 1;
         assert( mipLevelCount <= 15 );
+    }
+    else
+    {
+        assert( !"Only .tga is supported!" );
     }
 
     VkImageCreateInfo imageCreateInfo = {};
