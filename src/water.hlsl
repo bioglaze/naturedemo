@@ -37,6 +37,7 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
     vsOut.uv = uvs[ vertexId ] + float2( pushConstants.timeSecs, 0 );
     vsOut.uv.y = vsOut.uv.y;
     vsOut.pos = mul( data[ pushConstants.uboIndex ].localToClip, float4( positions[ vertexId ], 1 ) );
+    vsOut.pos.y += sin( vsOut.pos.x * pushConstants.timeSecs * 5 );
 
     return vsOut;
 }

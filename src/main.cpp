@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-07-30
+  Modified: 2019-08-04
  */
 #include <stdio.h>
 #include <math.h>
@@ -58,7 +58,7 @@ static void TransformMoveRight( Transform& transform, float amount )
     }
 }
 
-static float IsAlmost( float f1, float f2 )
+static bool IsAlmost( float f1, float f2 )
 {
     return fabsf( f1 - f2 ) < 0.0001f;
 }
@@ -126,7 +126,7 @@ int main()
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
     aeTexture2D sky1Tex = wave1Tex;
     aeTexture2D sky2Tex = wave1Tex;
-    aeMesh water = aeLoadMeshFile( planeFile );//aeCreatePlane();
+    aeMesh water = aeLoadMeshFile( planeFile );
     aeMesh sky = aeCreatePlane();
     aeMesh ground = aeCreatePlane();
 

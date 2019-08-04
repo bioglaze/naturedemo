@@ -3,7 +3,6 @@
 #include "mesh.hpp"
 #include "file.hpp"
 #include "vertexbuffer.hpp"
-#include <stdio.h>
 
 struct MeshImpl
 {
@@ -72,10 +71,15 @@ aeMesh aeLoadMeshFile( const struct aeFile& a3dFile )
 
     pointer += 4;
     const unsigned faceCount = *((unsigned*)pointer);
-    printf("faceCount: %d\n", faceCount);
     pointer += 4;
     meshes[ outMesh.index ].indices = CreateVertexBuffer( pointer, faceCount * 2 * 3, BufferType::Ushort, BufferUsage::Index, "indices" );
     pointer += faceCount * 2 * 3;
+
+    if (faceCount % 2 != 0)
+    {
+        pointer += 2;
+    }
+
     const unsigned vertexCount = *((unsigned*)pointer);
     pointer += 4;
     meshes[ outMesh.index ].positions = CreateVertexBuffer( pointer, vertexCount * 3 * 4, BufferType::Float3, BufferUsage::Vertex, "positions" );
@@ -83,7 +87,7 @@ aeMesh aeLoadMeshFile( const struct aeFile& a3dFile )
     meshes[ outMesh.index ].uvs = CreateVertexBuffer( pointer, vertexCount * 2 * 4, BufferType::Float2, BufferUsage::Vertex, "uvs" );
     pointer += vertexCount * 2 * 4;
     //meshes[ outMesh.index ].normals = CreateVertexBuffer( pointer, vertexCount * 3 * 4, BufferType::Float3, BufferUsage::Vertex, "normals" );
-    pointer += vertexCount * 3 * 4;
+    //pointer += vertexCount * 3 * 4;
     
     return outMesh;
 }

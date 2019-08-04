@@ -102,7 +102,6 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
     {
         unsigned bitsPerPixel = 32;
         LoadTGA( file, tex.width, tex.height, dataBeginOffset, bitsPerPixel );
-        printf("bitsPerPixel: %d\n", bitsPerPixel);
         bytesPerPixel = bitsPerPixel / 8;
 
         /*if (bytesPerPixel == 3)
