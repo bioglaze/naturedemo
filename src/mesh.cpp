@@ -7,6 +7,7 @@
 struct MeshImpl
 {
     VertexBuffer positions;
+    VertexBuffer normals;
     VertexBuffer uvs;
     VertexBuffer indices;
 };
@@ -86,7 +87,7 @@ aeMesh aeLoadMeshFile( const struct aeFile& a3dFile )
     pointer += vertexCount * 3 * 4;
     meshes[ outMesh.index ].uvs = CreateVertexBuffer( pointer, vertexCount * 2 * 4, BufferType::Float2, BufferUsage::Vertex, "uvs" );
     pointer += vertexCount * 2 * 4;
-    //meshes[ outMesh.index ].normals = CreateVertexBuffer( pointer, vertexCount * 3 * 4, BufferType::Float3, BufferUsage::Vertex, "normals" );
+    meshes[ outMesh.index ].normals = CreateVertexBuffer( pointer, vertexCount * 3 * 4, BufferType::Float3, BufferUsage::Vertex, "normals" );
     //pointer += vertexCount * 3 * 4;
     
     return outMesh;

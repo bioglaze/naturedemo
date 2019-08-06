@@ -29,6 +29,7 @@ struct VSOutput
 {
     float4 pos : SV_Position;
     float2 uv : TEXCOORD;
+    float3 surfaceToCamera : TEXCOORD1;
 };
 
 VSOutput mainVS( uint vertexId : SV_VertexID )
@@ -37,12 +38,20 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
     vsOut.uv = uvs[ vertexId ] + float2( pushConstants.timeSecs, 0 );
     vsOut.uv.y = vsOut.uv.y;
     vsOut.pos = mul( data[ pushConstants.uboIndex ].localToClip, float4( positions[ vertexId ], 1 ) );
-    vsOut.pos.y += sin( vsOut.pos.x * pushConstants.timeSecs * 5 );
+    vsOut.pos.y += sin( positions[ vertexId ].x * pushConstants.timeSecs * 50 );
+    vsOut.surfaceToCamera = -vsOut.pos.xyz;
 
     return vsOut;
 }
 
 float4 mainFS( VSOutput vsOut ) : SV_Target
 {
-    return textures[ pushConstants.texture2Index ].Sample( sLinear, vsOut.uv ) * float4( 0, 0, 1, 1 );
+    float3 normal = normalize( textures[ pushConstants.texture2Index ].Sample( sLinear, vsOut.uv ).xyz );
+    float diffuse = max( dot( normal, float3(0, 1, 0)/*-data[ pushConstants.uboIndex ].lightDir*/ ), 0.0f );
+
+    float shininess = 0.2f;
+    float3 surfaceToLight = float3( 0.5f, 0.5f, 0 );
+    float specular = pow( max( 0.0, dot( vsOut.surfaceToCamera, reflect( -surfaceToLight, normal ) ) ), shininess );
+
+    return textures[ pushConstants.texture1Index ].Sample( sLinear, vsOut.uv ) * diffuse + specular;
 }

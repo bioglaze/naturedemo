@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-08-04
+  Modified: 2019-08-06
  */
 #include <stdio.h>
 #include <math.h>
@@ -117,12 +117,14 @@ int main()
     aeFile wave1File = aeLoadFile( "wave1.tga" );
     aeFile noiseFile = aeLoadFile( "perlin_noise.tga" );
     aeFile planeFile = aeLoadFile( "plane.a3d" );
+    aeFile normalFile = aeLoadFile( "metal_plate_n.tga" );
     
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
     aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
     aeTexture2D wave1Tex = aeLoadTexture( wave1File, aeTextureFlags::SRGB );
+    aeTexture2D normalTex = aeLoadTexture( normalFile, aeTextureFlags::Empty );
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
     aeTexture2D sky1Tex = wave1Tex;
     aeTexture2D sky2Tex = wave1Tex;
@@ -245,9 +247,10 @@ int main()
         aeBeginFrame();
         aeBeginRenderPass();
 
-        const Vec3 lightDir{ 0, 1, 0 };
+        Vec3 lightDir{ 0, 1, 1 };
+        lightDir.Normalize();
 
-        aeRenderMesh( water, waterShader, waterMatrix, gliderTex, wave1Tex, lightDir, 0 );
+        aeRenderMesh( water, waterShader, waterMatrix, gliderTex, normalTex, lightDir, 0 );
         aeRenderMesh( sky, skyShader, skyMatrix, sky1Tex, sky2Tex, lightDir, 1 );
         aeRenderMesh( ground, groundShader, groundMatrix, gliderTex, gliderTex, lightDir, 2 );
 
