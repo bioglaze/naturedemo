@@ -96,7 +96,7 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
     int bytesPerPixel = 4;
     unsigned dataBeginOffset = 0;
     unsigned mipLevelCount = 1;
-    VkFormat format = VK_FORMAT_R8G8B8A8_SRGB;
+    VkFormat format = VK_FORMAT_B8G8R8A8_SRGB;
 
     if (strstr( file.path, ".tga" ) || strstr( file.path, ".TGA" ))
     {
