@@ -117,13 +117,15 @@ int main()
     aeFile wave1File = aeLoadFile( "wave1.tga" );
     aeFile noiseFile = aeLoadFile( "perlin_noise.tga" );
     aeFile planeFile = aeLoadFile( "plane.a3d" );
-    aeFile normalFile = aeLoadFile( "metal_plate_n.tga" );
+    aeFile normalFile = aeLoadFile( "water_n.tga" );
+    aeFile waterFile = aeLoadFile( "water.tga" );
     
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
     aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
     aeTexture2D wave1Tex = aeLoadTexture( wave1File, aeTextureFlags::SRGB );
+    aeTexture2D waterTex = aeLoadTexture( waterFile, aeTextureFlags::SRGB );
     aeTexture2D normalTex = aeLoadTexture( normalFile, aeTextureFlags::Empty );
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
     aeTexture2D sky1Tex = wave1Tex;
@@ -227,9 +229,9 @@ int main()
         rotationMatrix.MakeRotationXYZ( 0, 0, 0 );
 
         waterMatrix.MakeIdentity();
-        waterMatrix.Scale( 14, 2, 24 );
+        waterMatrix.Scale( 34, 2, 34 );
         Matrix::Multiply( waterMatrix, rotationMatrix, waterMatrix );
-        waterMatrix.Translate( { 0, -4, 5 } );
+        waterMatrix.Translate( { 20, -4, 15 } );
         Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterMatrix );
         Matrix::Multiply( waterMatrix, viewToClip, waterMatrix );
 
@@ -250,7 +252,7 @@ int main()
         Vec3 lightDir{ 0, 1, 1 };
         lightDir.Normalize();
 
-        aeRenderMesh( water, waterShader, waterMatrix, gliderTex, normalTex, lightDir, 0 );
+        aeRenderMesh( water, waterShader, waterMatrix, waterTex, normalTex, lightDir, 0 );
         aeRenderMesh( sky, skyShader, skyMatrix, sky1Tex, sky2Tex, lightDir, 1 );
         aeRenderMesh( ground, groundShader, groundMatrix, gliderTex, gliderTex, lightDir, 2 );
 

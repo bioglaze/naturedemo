@@ -44,6 +44,47 @@ struct GamePad
 GamePad gamePad;
 aeWindowImpl windows[ 10 ];
 
+static aeWindowEvent::KeyCode GetKeycode( uint32_t xcbKey )
+{
+    switch( xcbKey )
+    {
+    case 97: return aeWindowEvent::KeyCode::A;
+    case 98: return aeWindowEvent::KeyCode::B;
+    case 99: return aeWindowEvent::KeyCode::C;
+    case 100: return aeWindowEvent::KeyCode::D;
+    case 101: return aeWindowEvent::KeyCode::E;
+    case 102: return aeWindowEvent::KeyCode::F;
+    case 103: return aeWindowEvent::KeyCode::G;
+    case 104: return aeWindowEvent::KeyCode::H;
+    case 105: return aeWindowEvent::KeyCode::I;
+    case 106: return aeWindowEvent::KeyCode::J;
+    case 107: return aeWindowEvent::KeyCode::K;
+    case 108: return aeWindowEvent::KeyCode::L;
+    case 109: return aeWindowEvent::KeyCode::M;
+    case 110: return aeWindowEvent::KeyCode::N;
+    case 111: return aeWindowEvent::KeyCode::O;
+    case 112: return aeWindowEvent::KeyCode::P;
+    case 113: return aeWindowEvent::KeyCode::Q;
+    case 114: return aeWindowEvent::KeyCode::R;
+    case 115: return aeWindowEvent::KeyCode::S;
+    case 116: return aeWindowEvent::KeyCode::T;
+    case 117: return aeWindowEvent::KeyCode::U;
+    case 118: return aeWindowEvent::KeyCode::V;
+    case 119: return aeWindowEvent::KeyCode::W;
+    case 120: return aeWindowEvent::KeyCode::X;
+    case 121: return aeWindowEvent::KeyCode::Y;
+    case 122: return aeWindowEvent::KeyCode::Z;
+    case 32: return aeWindowEvent::KeyCode::Space;
+    case 65293: return aeWindowEvent::KeyCode::Enter;
+    case 65361: return aeWindowEvent::KeyCode::Left;
+    case 65362: return aeWindowEvent::KeyCode::Up;
+    case 65363: return aeWindowEvent::KeyCode::Right;
+    case 65364: return aeWindowEvent::KeyCode::Down;
+    case 65307: return aeWindowEvent::KeyCode::Escape;
+    default: return aeWindowEvent::KeyCode::A;
+    }
+}
+
 static void IncEventIndex()
 {
     if (windows[ 0 ].eventIndex < 15 - 1)
@@ -265,16 +306,19 @@ void aePumpWindowEvents( const aeWindow& window )
         else if (responseType == XCB_KEY_PRESS)
         {
             xcb_key_press_event_t* kp = (xcb_key_press_event_t *)event;
-            printf("key code: %d, modifiers: %d\n", kp->event, kp->state);
+            const xcb_keysym_t keysym = xcb_key_symbols_get_keysym( windows[ window.index ].keySymbols, kp->detail, 0 );
             IncEventIndex();
 
             windows[ window.index ].events[ windows[ window.index ].eventIndex ].type = aeWindowEvent::Type::KeyDown;
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].keyCode = GetKeycode( keysym );
         }
         else if (responseType == XCB_KEY_RELEASE)
         {
-            //xcb_key_press_event_t* kp = (xcb_key_press_event_t *)event;
+            xcb_key_press_event_t* kp = (xcb_key_press_event_t *)event;
+            const xcb_keysym_t keysym = xcb_key_symbols_get_keysym( windows[ window.index ].keySymbols, kp->detail, 0 );
             IncEventIndex();
             windows[ window.index ].events[ windows[ window.index ].eventIndex ].type = aeWindowEvent::Type::KeyUp;
+            windows[ window.index ].events[ windows[ window.index ].eventIndex ].keyCode = GetKeycode( keysym );
         }
         else if (responseType == XCB_MOTION_NOTIFY)
         {
