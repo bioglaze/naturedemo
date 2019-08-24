@@ -99,12 +99,6 @@ VkPipelineLayout gPipelineLayout = VK_NULL_HANDLE;
 VkCommandBuffer gTexCommandBuffer;
 VkDescriptorSetLayout gDescriptorSetLayout;
 VkDescriptorPool gDescriptorPool;
-VkBuffer gIndirectBuffer = VK_NULL_HANDLE;
-VkDeviceMemory gIndirectMemory = VK_NULL_HANDLE;
-constexpr unsigned IndirectCommandCount = 1;
-VkDrawIndexedIndirectCommand gIndirectCommands[ IndirectCommandCount ] = {};
-void* gMappedIndirectStagingMemory = nullptr;
-VkBuffer gIndirectStagingBuffer = VK_NULL_HANDLE;
 VkPipelineCache gPipelineCache = VK_NULL_HANDLE;
 
 unsigned gWidth = 0;
@@ -555,8 +549,7 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
     
 	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( pushConstants ), &pushConstants );
 
-	unsigned indirectDrawCount = 1;
-	vkCmdDrawIndexedIndirect( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gIndirectBuffer, 0, indirectDrawCount, sizeof( VkDrawIndexedIndirectCommand ) );
+    vkCmdDrawIndexed( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, indices.count, 1, 0, 0, 0 );
 }
 
 static bool CreateInstance( VkInstance& outInstance )
@@ -1285,54 +1278,6 @@ void CopyBuffer( VkBuffer source, VkBuffer& destination, unsigned bufferSize )
     vkFreeCommandBuffers( gDevice, cmdBufInfo.commandPool, 1, &copyCommandBuffer );
 }
 
-static void UpdateIndirectBuffer()
-{
-	unsigned instanceCount = 1;
-	unsigned indexCount = 36;
-
-	gIndirectCommands[ 0 ].instanceCount = instanceCount;
-	gIndirectCommands[ 0 ].firstInstance = 0 * instanceCount;
-	gIndirectCommands[ 0 ].firstIndex = 0;
-	gIndirectCommands[ 0 ].indexCount = indexCount;
-
-	memcpy( gMappedIndirectStagingMemory, &gIndirectCommands, sizeof( gIndirectCommands ) );
-	CopyBuffer( gIndirectStagingBuffer, gIndirectBuffer, IndirectCommandCount * sizeof( VkDrawIndexedIndirectCommand ) );
-}
-
-static void CreateIndirectBuffer()
-{
-    VkBufferCreateInfo bufferInfo = {};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = IndirectCommandCount * sizeof( VkDrawIndexedIndirectCommand );
-    bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    VK_CHECK( vkCreateBuffer( gDevice, &bufferInfo, nullptr, &gIndirectStagingBuffer ) );
-    SetObjectName( gDevice, (uint64_t)gIndirectStagingBuffer, VK_OBJECT_TYPE_BUFFER, "indirectStagingBuffer" );
-
-    VkDeviceMemory stagingMemory;
-    VkMemoryRequirements memReqs;
-    vkGetBufferMemoryRequirements( gDevice, gIndirectStagingBuffer, &memReqs );
-
-    VkMemoryAllocateInfo memAlloc = {};
-    memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memAlloc.allocationSize = memReqs.size;
-    memAlloc.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
-    VK_CHECK( vkAllocateMemory( gDevice, &memAlloc, nullptr, &stagingMemory ) );
-    VK_CHECK( vkBindBufferMemory( gDevice, gIndirectStagingBuffer, stagingMemory, 0 ) );
-
-    bufferInfo.usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    VK_CHECK( vkCreateBuffer( gDevice, &bufferInfo, nullptr, &gIndirectBuffer ) );
-    SetObjectName( gDevice, (uint64_t)gIndirectBuffer, VK_OBJECT_TYPE_BUFFER, "indirectBuffer" );
-
-    vkGetBufferMemoryRequirements( gDevice, gIndirectBuffer, &memReqs );
-    memAlloc.allocationSize = memReqs.size;
-    memAlloc.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
-    VK_CHECK( vkAllocateMemory( gDevice, &memAlloc, nullptr, &gIndirectMemory ) );
-    VK_CHECK( vkBindBufferMemory( gDevice, gIndirectBuffer, gIndirectMemory, 0 ) );
-    VK_CHECK( vkMapMemory( gDevice, stagingMemory, 0, bufferInfo.size, 0, &gMappedIndirectStagingMemory ) );
-
-    UpdateIndirectBuffer();
-}
-
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window )
 {
     gWidth = width;
@@ -1371,7 +1316,6 @@ void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* c
     SetObjectName( gDevice, (uint64_t)gTexCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, "texCommandBuffer" );
 
     CreateDescriptorSets();
-    CreateIndirectBuffer();
 
     VkSamplerCreateInfo samplerInfo = {};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
