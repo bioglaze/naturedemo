@@ -18,8 +18,16 @@
 void aeShaderGetInfo( const aeShader& shader, VkPipelineShaderStageCreateInfo& outVertexInfo, VkPipelineShaderStageCreateInfo& outFragmentInfo );
 VkBuffer VertexBufferGet( const VertexBuffer& buffer );
 
+struct DepthStencil
+{
+    VkImage image = VK_NULL_HANDLE;
+    VkDeviceMemory mem = VK_NULL_HANDLE;
+    VkImageView view = VK_NULL_HANDLE;
+};
+
 struct SwapchainResource
 {
+    DepthStencil depthStencil;
     VkImage image = VK_NULL_HANDLE;
     VkImage msaaColorImage = VK_NULL_HANDLE;
     VkImageView view = VK_NULL_HANDLE;
@@ -47,13 +55,6 @@ struct Ubo
     VkDescriptorBufferInfo uboDesc = {};
     UboStruct* uboData = nullptr;
 } ubos[ 3 ];
-
-struct DepthStencil
-{
-    VkImage image = VK_NULL_HANDLE;
-    VkDeviceMemory mem = VK_NULL_HANDLE;
-    VkImageView view = VK_NULL_HANDLE;
-} gDepthStencil;
 
 struct PSO
 {
@@ -1103,7 +1104,7 @@ static void CreateFramebufferMSAA( int width, int height )
         VK_CHECK( vkCreateImageView( gDevice, &viewInfo, nullptr, &gSwapchainResources[ i ].msaaColorView ) );
 
         attachments[ 0 ] = gSwapchainResources[ i ].msaaColorView;
-        attachments[ 1 ] = gDepthStencil.view;
+        attachments[ 1 ] = gSwapchainResources[ i ].depthStencil.view;
         attachments[ 2 ] = gSwapchainResources[ i ].view;
         VK_CHECK( vkCreateFramebuffer( gDevice, &frameBufferCreateInfo, nullptr, &gSwapchainResources[ i ].frameBuffer ) );
     }
@@ -1122,33 +1123,36 @@ static void CreateDepthStencil( uint32_t width, uint32_t height )
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
     image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-    VK_CHECK( vkCreateImage( gDevice, &image, nullptr, &gDepthStencil.image ) );
+    for (unsigned i = 0; i < 3; ++i)
+    {
+        VK_CHECK( vkCreateImage( gDevice, &image, nullptr, &gSwapchainResources[ i ].depthStencil.image ) );
 
-    VkMemoryRequirements memReqs;
-    vkGetImageMemoryRequirements( gDevice, gDepthStencil.image, &memReqs );
+        VkMemoryRequirements memReqs;
+        vkGetImageMemoryRequirements( gDevice, gSwapchainResources[ i ].depthStencil.image, &memReqs );
 
-    VkMemoryAllocateInfo mem_alloc = {};
-    mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    mem_alloc.allocationSize = memReqs.size;
-    mem_alloc.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
-    VK_CHECK( vkAllocateMemory( gDevice, &mem_alloc, nullptr, &gDepthStencil.mem ) );
+        VkMemoryAllocateInfo mem_alloc = {};
+        mem_alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        mem_alloc.allocationSize = memReqs.size;
+        mem_alloc.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+        VK_CHECK( vkAllocateMemory( gDevice, &mem_alloc, nullptr, &gSwapchainResources[ i ].depthStencil.mem ) );
 
-    VK_CHECK( vkBindImageMemory( gDevice, gDepthStencil.image, gDepthStencil.mem, 0 ) );
-    SetImageLayout( gSwapchainResources[ 0 ].drawCommandBuffer, gDepthStencil.image, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, 0, 1, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT );
+        VK_CHECK( vkBindImageMemory( gDevice, gSwapchainResources[ i ].depthStencil.image, gSwapchainResources[ i ].depthStencil.mem, 0 ) );
+        SetImageLayout( gSwapchainResources[ 0 ].drawCommandBuffer, gSwapchainResources[ i ].depthStencil.image, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
+                        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, 0, 1, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT );
 
-    VkImageViewCreateInfo depthStencilView = {};
-    depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    depthStencilView.format = gDepthFormat;
-    depthStencilView.subresourceRange = {};
-    depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-    depthStencilView.subresourceRange.baseMipLevel = 0;
-    depthStencilView.subresourceRange.levelCount = 1;
-    depthStencilView.subresourceRange.baseArrayLayer = 0;
-    depthStencilView.subresourceRange.layerCount = 1;
-    depthStencilView.image = gDepthStencil.image;
-    VK_CHECK( vkCreateImageView( gDevice, &depthStencilView, nullptr, &gDepthStencil.view ) );
+        VkImageViewCreateInfo depthStencilView = {};
+        depthStencilView.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        depthStencilView.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        depthStencilView.format = gDepthFormat;
+        depthStencilView.subresourceRange = {};
+        depthStencilView.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+        depthStencilView.subresourceRange.baseMipLevel = 0;
+        depthStencilView.subresourceRange.levelCount = 1;
+        depthStencilView.subresourceRange.baseArrayLayer = 0;
+        depthStencilView.subresourceRange.layerCount = 1;
+        depthStencilView.image = gSwapchainResources[ i ].depthStencil.image;
+        VK_CHECK( vkCreateImageView( gDevice, &depthStencilView, nullptr, &gSwapchainResources[ i ].depthStencil.view ) );
+    }
 }
 
 static void CreateDescriptorSets()
