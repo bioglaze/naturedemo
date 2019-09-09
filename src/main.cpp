@@ -39,7 +39,9 @@ static void TransformSolveLocalMatrix( Transform& transform )
 {
     transform.localRotation.GetMatrix( transform.localMatrix );
     transform.localMatrix.Scale( transform.localScale, transform.localScale, transform.localScale );
-    transform.localMatrix.Translate( transform.localPosition );
+    Matrix trans;
+    trans.SetTranslation( transform.localPosition );
+    Matrix::Multiply( trans, transform.localMatrix, transform.localMatrix );
 }
 
 static void TransformMoveForward( Transform& transform, float amount )
@@ -174,19 +176,19 @@ int main()
             }
 			else if( event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::S)
 			{
-				TransformMoveForward( cameraTransform, 0.5f );
+				TransformMoveForward( cameraTransform, -0.5f );
 			}
 			else if( event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::W)
 			{
-				TransformMoveForward( cameraTransform, -0.5f );
+				TransformMoveForward( cameraTransform, 0.5f );
 			}
             else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::A)
             {
-                TransformMoveRight( cameraTransform, -0.5f );
+                TransformMoveRight( cameraTransform, 0.5f );
             }
             else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::D)
             {
-                TransformMoveRight( cameraTransform, 0.5f );
+                TransformMoveRight( cameraTransform, -0.5f );
             }
             else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::Escape)
             {
