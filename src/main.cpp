@@ -39,7 +39,7 @@ static void TransformSolveLocalMatrix( Transform& transform )
 {
     transform.localRotation.GetMatrix( transform.localMatrix );
     transform.localMatrix.Scale( transform.localScale, transform.localScale, transform.localScale );
-    transform.localMatrix.SetTranslation( transform.localPosition );
+    transform.localMatrix.Translate( transform.localPosition );
 }
 
 static void TransformMoveForward( Transform& transform, float amount )

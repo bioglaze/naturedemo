@@ -292,7 +292,6 @@ void Matrix::SetTranslation( const Vec3& translation )
 void Matrix::Translate( const Vec3& v )
 {
     Matrix translateMatrix;
-    translateMatrix.MakeIdentity();
     
     translateMatrix.m[ 12 ] = v.x;
     translateMatrix.m[ 13 ] = v.y;
