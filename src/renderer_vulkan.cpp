@@ -1342,8 +1342,6 @@ void aeBeginRenderPass()
 {
     VkClearValue clearValues[ 3 ] = {};
     
-    //clearValues[ 0 ].color = GfxDeviceGlobal::clearColor;
-    //clearValues[ 1 ].color = GfxDeviceGlobal::clearColor;
     clearValues[ 2 ].depthStencil = { 1.0f, 0 };
 
     VkRenderPassBeginInfo renderPassBeginInfo = {};
