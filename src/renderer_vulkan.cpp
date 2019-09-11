@@ -553,7 +553,7 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
     vkCmdDrawIndexed( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, indices.count, 1, 0, 0, 0 );
 }
 
-static bool CreateInstance( VkInstance& outInstance )
+static void CreateInstance( VkInstance& outInstance )
 {
     typedef VkResult(VKAPI_PTR * FuncPtrEnumerateInstanceVersion)(uint32_t * pApiVersion);
     FuncPtrEnumerateInstanceVersion vulkan11EnumerateInstanceVersion = (FuncPtrEnumerateInstanceVersion)vkGetInstanceProcAddr( VK_NULL_HANDLE, "vkEnumerateInstanceVersion" );
@@ -569,9 +569,9 @@ static bool CreateInstance( VkInstance& outInstance )
 
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties( nullptr, &extensionCount, nullptr );
+	assert( extensionCount < 20 );
     VkExtensionProperties extensions[ 20 ];
     vkEnumerateInstanceExtensionProperties( nullptr, &extensionCount, extensions );
-
     bool hasDebugUtils = false;
 
     for (uint32_t i = 0; i < extensionCount; ++i)
@@ -610,13 +610,7 @@ static bool CreateInstance( VkInstance& outInstance )
 
     instanceCreateInfo.pNext = &features;
 #endif
-    VkResult result = vkCreateInstance( &instanceCreateInfo, nullptr, &outInstance );
-
-    if (result != VK_SUCCESS)
-    {
-        printf( "Unable to create instance!\n" );
-        return false;
-    }
+	VK_CHECK( vkCreateInstance( &instanceCreateInfo, nullptr, &outInstance ) );
 
 #if _DEBUG
     PFN_vkCreateDebugUtilsMessengerEXT dbgCreateDebugUtilsMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr( outInstance, "vkCreateDebugUtilsMessengerEXT" );
@@ -625,13 +619,11 @@ static bool CreateInstance( VkInstance& outInstance )
     dbg_messenger_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     dbg_messenger_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     dbg_messenger_create_info.pfnUserCallback = dbgFunc;
-    result = dbgCreateDebugUtilsMessenger( outInstance, &dbg_messenger_create_info, nullptr, &gDbgMessenger );
+	VK_CHECK( dbgCreateDebugUtilsMessenger( outInstance, &dbg_messenger_create_info, nullptr, &gDbgMessenger ) );
 
     CmdBeginDebugUtilsLabelEXT = ( PFN_vkCmdBeginDebugUtilsLabelEXT )vkGetInstanceProcAddr( outInstance, "vkCmdBeginDebugUtilsLabelEXT" );
     CmdEndDebugUtilsLabelEXT = ( PFN_vkCmdEndDebugUtilsLabelEXT )vkGetInstanceProcAddr( outInstance, "vkCmdEndDebugUtilsLabelEXT" );
 #endif
-    assert( result == VK_SUCCESS );
-    return result == VK_SUCCESS;
 }
 
 static void LoadFunctionPointers()
