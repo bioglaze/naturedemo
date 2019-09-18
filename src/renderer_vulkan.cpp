@@ -44,7 +44,7 @@ struct SwapchainResource
 struct UboStruct
 {
     Matrix localToClip;
-    Vec3 color;
+    float color[ 4 ];
     Vec3 lightDir;
 };
 

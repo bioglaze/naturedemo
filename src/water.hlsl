@@ -5,7 +5,7 @@
 struct UniformData
 {
     matrix localToClip;
-    float3 color;
+    float4 color;
     float3 lightDir;
 };
 
@@ -47,7 +47,7 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
 float4 mainFS( VSOutput vsOut ) : SV_Target
 {
     float3 normal = normalize( textures[ pushConstants.texture2Index ].Sample( sLinear, vsOut.uv ).xyz );
-    float diffuse = max( dot( normal, float3(0, 1, 0)/*-data[ pushConstants.uboIndex ].lightDir*/ ), 0.0f );
+    float diffuse = max( dot( normal, data[ pushConstants.uboIndex ].lightDir ), 0.0f );
 
     float shininess = 0.2f;
     float3 surfaceToLight = float3( 0.5f, 0.5f, 0 );
