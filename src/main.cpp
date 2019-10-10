@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-09-18
+  Modified: 2019-09-28
  */
 #include <stdio.h>
 #include <math.h>
@@ -121,7 +121,7 @@ int main()
     aeFile planeFile = aeLoadFile( "plane.a3d" );
     aeFile normalFile = aeLoadFile( "water_n.tga" );
     aeFile waterFile = aeLoadFile( "water.tga" );
-    
+
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
@@ -261,6 +261,19 @@ int main()
         aeEndRenderPass();
         aeEndFrame();
     }
-    
+
+    delete[] waterVertFile.data;
+    delete[] waterFragFile.data;
+    delete[] skyVertFile.data;
+    delete[] skyFragFile.data;
+    delete[] groundVertFile.data;
+    delete[] groundFragFile.data;
+    delete[] gliderFile.data;
+    delete[] wave1File.data;
+    delete[] planeFile.data;
+    delete[] noiseFile.data;
+    delete[] normalFile.data;
+    delete[] waterFile.data;
+
     return 0;
 }
