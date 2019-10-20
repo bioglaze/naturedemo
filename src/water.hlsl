@@ -5,6 +5,7 @@
 struct UniformData
 {
     matrix localToClip;
+    matrix localToView;
     float4 color;
     float3 lightDir;
 };
@@ -66,7 +67,8 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
     //pos.y += fmod( pos.x, 2.0f ) * 4;
 
     vsOut.pos = mul( data[ pushConstants.uboIndex ].localToClip, pos );
-    vsOut.surfaceToCamera = -vsOut.pos.xyz;
+    float4 posView = mul( data[ pushConstants.uboIndex ].localToView, pos );
+    vsOut.surfaceToCamera = posView.xyz;
 
     return vsOut;
 }

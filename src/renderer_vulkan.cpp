@@ -44,6 +44,7 @@ struct SwapchainResource
 struct UboStruct
 {
     Matrix localToClip;
+    Matrix localToView;
     float color[ 4 ];
     Vec3 lightDir;
 };
@@ -117,10 +118,11 @@ PFN_vkSetDebugUtilsObjectNameEXT setDebugUtilsObjectNameEXT;
 PFN_vkCmdBeginDebugUtilsLabelEXT CmdBeginDebugUtilsLabelEXT;
 PFN_vkCmdEndDebugUtilsLabelEXT CmdEndDebugUtilsLabelEXT;
 
-static void UpdateUBO( const Matrix& localToClip, const Vec3& lightDir, unsigned uboIndex )
+static void UpdateUBO( const Matrix& localToClip, const Matrix& localToView, const Vec3& lightDir, unsigned uboIndex )
 {
     UboStruct ubo;
     ubo.localToClip = localToClip;
+    ubo.localToView = localToView;
     ubo.lightDir = lightDir;
 
     memcpy( &ubos[ 0 ].uboData[ uboIndex ], &ubo, sizeof( UboStruct ) );
@@ -521,9 +523,9 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
     return psoIndex;
 }
 
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex )
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex )
 {
-    UpdateUBO( localToClip, lightDir, uboIndex );
+    UpdateUBO( localToClip, localToView, lightDir, uboIndex );
     
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
 	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
@@ -1315,7 +1317,7 @@ void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* c
 
     VkSamplerCreateInfo samplerInfo = {};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_NEAREST;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
     samplerInfo.minFilter = samplerInfo.magFilter;
     samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
     samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;

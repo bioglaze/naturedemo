@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-09-28
+  Modified: 2019-10-20
  */
 #include <stdio.h>
 #include <math.h>
@@ -21,7 +21,7 @@
 #include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex );
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -234,19 +234,22 @@ int main()
         waterMatrix.Scale( 34, 2, 34 );
         Matrix::Multiply( waterMatrix, rotationMatrix, waterMatrix );
         waterMatrix.Translate( { 20, -4, 15 } );
-        Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterMatrix );
-        Matrix::Multiply( waterMatrix, viewToClip, waterMatrix );
+        Matrix waterView;
+        Matrix::Multiply( waterMatrix, cameraTransform.localMatrix, waterView );
+        Matrix::Multiply( waterView, viewToClip, waterMatrix );
 
         skyMatrix.MakeIdentity();
         skyMatrix.Scale( 18, 2, 28 );
         skyMatrix.Translate( { 0, 4, 5 } );
-        Matrix::Multiply( skyMatrix, cameraTransform.localMatrix, skyMatrix );
-        Matrix::Multiply( skyMatrix, viewToClip, skyMatrix );
+        Matrix skyView;
+        Matrix::Multiply( skyMatrix, cameraTransform.localMatrix, skyView );
+        Matrix::Multiply( skyView, viewToClip, skyMatrix );
 
         groundMatrix.MakeIdentity();
         groundMatrix.Translate( { 2, -1, 5 } );
-        Matrix::Multiply( groundMatrix, cameraTransform.localMatrix, groundMatrix );
-        Matrix::Multiply( groundMatrix, viewToClip, groundMatrix );
+        Matrix groundView;
+        Matrix::Multiply( groundMatrix, cameraTransform.localMatrix, groundView );
+        Matrix::Multiply( groundView, viewToClip, groundMatrix );
 
         aeBeginFrame();
         aeBeginRenderPass();
@@ -254,9 +257,9 @@ int main()
         Vec3 lightDir{ 0, 1, 1 };
         lightDir.Normalize();
 
-        aeRenderMesh( water, waterShader, waterMatrix, waterTex, normalTex, lightDir, 0 );
-        aeRenderMesh( sky, skyShader, skyMatrix, sky1Tex, sky2Tex, lightDir, 1 );
-        aeRenderMesh( ground, groundShader, groundMatrix, gliderTex, gliderTex, lightDir, 2 );
+        aeRenderMesh( water, waterShader, waterMatrix, waterView, waterTex, normalTex, lightDir, 0 );
+        aeRenderMesh( sky, skyShader, skyMatrix, skyView, sky1Tex, sky2Tex, lightDir, 1 );
+        aeRenderMesh( ground, groundShader, groundMatrix, groundView, gliderTex, gliderTex, lightDir, 2 );
 
         aeEndRenderPass();
         aeEndFrame();

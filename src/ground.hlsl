@@ -5,6 +5,7 @@
 struct UniformData
 {
     matrix localToClip;
+    matrix localToView;
     float3 color;
     float3 lightDir;
 };
