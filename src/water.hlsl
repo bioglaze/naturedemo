@@ -37,10 +37,10 @@ float wave( int i, float x, float y )
 {
     const float wavelength[ 8 ] = { 2, 1, 3, 1, 4, 1, 5, 1 };
     const float speed[ 8 ] = { 1, 1, 1, 1, 1, 1, 1, 1 };
-    const float amplitude[ 8 ] = { 3, 1, 2, 4, 1, 2, 1, 3 };
+    const float amplitude[ 8 ] = { 2, 1, 2, 3, 1, 2, 1, 2 };
     const float direction[ 8 ] = { 1, 1, 1, 1, 1, 1, 1, 1 };
 
-    float frequency = 2 * 3.14159265f / wavelength[i];
+    float frequency = 2 * 3.14159265f / wavelength[ i ];
     float phase = speed[i] * frequency;
     float theta = dot(direction[i], float2(x, y));
     return amplitude[i] * sin(theta * frequency + pushConstants.timeSecs * phase);
@@ -64,8 +64,10 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
     //pos.y += sin( fmod(pos.z, 4.2f) * pushConstants.timeSecs * 15 ) / 2;
     //pos.y += sin( pos.x * 1000) * 2;//sin( fmod(pos.z, 2.2f) * pushConstants.timeSecs * 50 );
     //pos.y += waveHeight( fmod( positions[ vertexId ].x, 2.0f ), fmod( positions[ vertexId ].z, 2.0f ) );
-    //pos.y += fmod( pos.x, 2.0f ) * 4;
-
+    //pos.y += waveHeight( positions[ vertexId ].x, positions[ vertexId ].z );
+    //pos.y += waveHeight( pos.x / 10, pos.z / 10 );
+    pos.y += sin( pushConstants.timeSecs * 10 ) * 0.5f;
+    
     vsOut.pos = mul( data[ pushConstants.uboIndex ].localToClip, pos );
     float4 posView = mul( data[ pushConstants.uboIndex ].localToView, pos );
     vsOut.surfaceToCamera = posView.xyz;
@@ -75,12 +77,18 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
 
 float4 mainFS( VSOutput vsOut ) : SV_Target
 {
-    float3 normal = normalize( textures[ pushConstants.texture2Index ].Sample( sLinear, vsOut.uv ).xyz );
+    float3 normal = normalize( textures[ pushConstants.texture2Index ].Sample( sLinear, vsOut.uv ).xyz * 2 + 1 );
+    float4 normalView = mul( data[ pushConstants.uboIndex ].localToView, float4( normal, 0 ) );
     float diffuse = max( dot( normal, data[ pushConstants.uboIndex ].lightDir ), 0.0f );
+    float4 diffuse4 = diffuse;
+    diffuse4.rg = 0;
+    
+    float shininess = 0.02f;
+    float3 surfaceToLight = normalize( float3( 0.5f, 0.5f, 0 ) );
+    //float4 surfaceToLightView = mul( data[ pushConstants.uboIndex ].localToView, float4( surfaceToLight, 0 ) );
+    float3 surfaceToLightView = -data[ pushConstants.uboIndex ].lightDir;
+    
+    float specular = pow( max( 0.0, dot( normalize( vsOut.surfaceToCamera ), normalize( reflect( -surfaceToLightView.xyz, normalView.xyz ) ) ) ), shininess );
 
-    float shininess = 0.2f;
-    float3 surfaceToLight = float3( 0.5f, 0.5f, 0 );
-    float specular = pow( max( 0.0, dot( vsOut.surfaceToCamera, reflect( -surfaceToLight, normal ) ) ), shininess );
-
-    return textures[ pushConstants.texture1Index ].Sample( sLinear, vsOut.uv ) * diffuse + specular;
+    return textures[ pushConstants.texture1Index ].Sample( sLinear, vsOut.uv ) * diffuse4 + specular;
 }

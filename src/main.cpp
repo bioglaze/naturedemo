@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-10-20
+  Modified: 2019-10-29
  */
 #include <stdio.h>
 #include <math.h>
@@ -57,6 +57,14 @@ static void TransformMoveRight( Transform& transform, float amount )
     if (amount != 0)
     {
         transform.localPosition += transform.localRotation * Vec3( amount, 0, 0 );
+    }
+}
+
+static void TransformMoveUp( Transform& transform, float amount )
+{
+    if (amount != 0)
+    {
+        transform.localPosition += transform.localRotation * Vec3( 0, amount, 0 );
     }
 }
 
@@ -117,6 +125,7 @@ int main()
     aeFile groundFragFile = aeLoadFile( "ground_fs.spv" );
     aeFile gliderFile = aeLoadFile( "glider.tga" );
     aeFile wave1File = aeLoadFile( "wave1.tga" );
+    aeFile wave1nFile = aeLoadFile( "wave1_n.tga" );
     aeFile noiseFile = aeLoadFile( "perlin_noise.tga" );
     aeFile planeFile = aeLoadFile( "plane.a3d" );
     aeFile normalFile = aeLoadFile( "water_n.tga" );
@@ -127,8 +136,7 @@ int main()
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
     aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
     aeTexture2D wave1Tex = aeLoadTexture( wave1File, aeTextureFlags::SRGB );
-    aeTexture2D waterTex = aeLoadTexture( waterFile, aeTextureFlags::SRGB );
-    aeTexture2D normalTex = aeLoadTexture( normalFile, aeTextureFlags::Empty );
+    aeTexture2D wave1nTex = aeLoadTexture( wave1nFile, aeTextureFlags::Empty );
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
     aeTexture2D sky1Tex = wave1Tex;
     aeTexture2D sky2Tex = wave1Tex;
@@ -189,6 +197,14 @@ int main()
             else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::D)
             {
                 TransformMoveRight( cameraTransform, -0.5f );
+            }
+            else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::E)
+            {
+                TransformMoveUp( cameraTransform, -0.5f );
+            }
+            else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::Q)
+            {
+                TransformMoveUp( cameraTransform, 0.5f );
             }
             else if (event.type == aeWindowEvent::Type::KeyDown && event.keyCode == aeWindowEvent::KeyCode::Escape)
             {
@@ -257,7 +273,7 @@ int main()
         Vec3 lightDir{ 0, 1, 1 };
         lightDir.Normalize();
 
-        aeRenderMesh( water, waterShader, waterMatrix, waterView, waterTex, normalTex, lightDir, 0 );
+        aeRenderMesh( water, waterShader, waterMatrix, waterView, wave1Tex, wave1nTex, lightDir, 0 );
         aeRenderMesh( sky, skyShader, skyMatrix, skyView, sky1Tex, sky2Tex, lightDir, 1 );
         aeRenderMesh( ground, groundShader, groundMatrix, groundView, gliderTex, gliderTex, lightDir, 2 );
 
