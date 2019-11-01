@@ -128,8 +128,6 @@ int main()
     aeFile wave1nFile = aeLoadFile( "wave1_n.tga" );
     aeFile noiseFile = aeLoadFile( "perlin_noise.tga" );
     aeFile planeFile = aeLoadFile( "plane.a3d" );
-    aeFile normalFile = aeLoadFile( "water_n.tga" );
-    aeFile waterFile = aeLoadFile( "water.tga" );
 
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
@@ -291,8 +289,6 @@ int main()
     delete[] wave1File.data;
     delete[] planeFile.data;
     delete[] noiseFile.data;
-    delete[] normalFile.data;
-    delete[] waterFile.data;
 
     return 0;
 }

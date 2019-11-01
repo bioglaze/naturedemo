@@ -821,6 +821,7 @@ static bool CreateSwapchain( unsigned& width, unsigned& height, int presentInter
         colorAttachmentView.viewType = VK_IMAGE_VIEW_TYPE_2D;
         colorAttachmentView.image = images[ i ];
         VK_CHECK( vkCreateImageView( gDevice, &colorAttachmentView, nullptr, &gSwapchainResources[ i ].view ) );
+        SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].view, VK_OBJECT_TYPE_IMAGE_VIEW, "swap chain view" );
 
         gSwapchainResources[ i ].image = images[ i ];
 
@@ -1070,6 +1071,7 @@ static void CreateFramebufferMSAA( int width, int height )
         info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
         VK_CHECK( vkCreateImage( gDevice, &info, nullptr, &gSwapchainResources[ i ].msaaColorImage ) );
+        SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].msaaColorImage, VK_OBJECT_TYPE_IMAGE, "msaaColorImage" );
 
         VkMemoryRequirements memReqs;
         vkGetImageMemoryRequirements( gDevice, gSwapchainResources[ i ].msaaColorImage, &memReqs );
@@ -1096,11 +1098,13 @@ static void CreateFramebufferMSAA( int width, int height )
         viewInfo.subresourceRange.layerCount = 1;
 
         VK_CHECK( vkCreateImageView( gDevice, &viewInfo, nullptr, &gSwapchainResources[ i ].msaaColorView ) );
+        SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].msaaColorView, VK_OBJECT_TYPE_IMAGE_VIEW, "msaaColorView" );
 
         attachments[ 0 ] = gSwapchainResources[ i ].msaaColorView;
         attachments[ 1 ] = gSwapchainResources[ i ].depthStencil.view;
         attachments[ 2 ] = gSwapchainResources[ i ].view;
         VK_CHECK( vkCreateFramebuffer( gDevice, &frameBufferCreateInfo, nullptr, &gSwapchainResources[ i ].frameBuffer ) );
+        SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].frameBuffer, VK_OBJECT_TYPE_FRAMEBUFFER, "framebuffer" );
     }
 }
 
@@ -1120,6 +1124,7 @@ static void CreateDepthStencil( uint32_t width, uint32_t height )
     for (unsigned i = 0; i < 3; ++i)
     {
         VK_CHECK( vkCreateImage( gDevice, &image, nullptr, &gSwapchainResources[ i ].depthStencil.image ) );
+        SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].depthStencil.image, VK_OBJECT_TYPE_IMAGE, "depthStencil" );
 
         VkMemoryRequirements memReqs;
         vkGetImageMemoryRequirements( gDevice, gSwapchainResources[ i ].depthStencil.image, &memReqs );
@@ -1146,6 +1151,7 @@ static void CreateDepthStencil( uint32_t width, uint32_t height )
         depthStencilView.subresourceRange.layerCount = 1;
         depthStencilView.image = gSwapchainResources[ i ].depthStencil.image;
         VK_CHECK( vkCreateImageView( gDevice, &depthStencilView, nullptr, &gSwapchainResources[ i ].depthStencil.view ) );
+        SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].depthStencil.view, VK_OBJECT_TYPE_IMAGE_VIEW, "depthStencil view" );
     }
 }
 
