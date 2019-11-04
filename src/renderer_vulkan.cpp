@@ -17,6 +17,7 @@
 
 void aeShaderGetInfo( const aeShader& shader, VkPipelineShaderStageCreateInfo& outVertexInfo, VkPipelineShaderStageCreateInfo& outFragmentInfo );
 VkBuffer VertexBufferGet( const VertexBuffer& buffer );
+void UpdateAndBindDescriptors();
 
 struct DepthStencil
 {
@@ -526,7 +527,7 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
 void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex )
 {
     UpdateUBO( localToClip, localToView, lightDir, uboIndex );
-    
+
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
 	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
 
@@ -1249,6 +1250,69 @@ static void CreateDescriptorSets()
     VK_CHECK( vkCreatePipelineLayout( gDevice, &createInfo, nullptr, &gPipelineLayout ) );
 }
 
+static void UpdateAndBindDescriptors()
+{
+    VkDescriptorImageInfo samplerInfos[ TextureCount ] = {};
+
+    for (unsigned i = 0; i < TextureCount; ++i)
+    {
+        samplerInfos[ i ].sampler = sampler;
+        samplerInfos[ i ].imageView = views[ i ];
+        samplerInfos[ i ].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    }
+
+    VkWriteDescriptorSet imageSet = {};
+    imageSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    imageSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    imageSet.descriptorCount = TextureCount;
+    imageSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    imageSet.pImageInfo = &samplerInfos[ 0 ];
+    imageSet.dstBinding = 0;
+
+    VkWriteDescriptorSet samplerSet = {};
+    samplerSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    samplerSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    samplerSet.descriptorCount = 1;
+    samplerSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+    samplerSet.pImageInfo = &samplerInfos[ 0 ];
+    samplerSet.dstBinding = 1;
+
+    VkWriteDescriptorSet bufferSet = {};
+    bufferSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    bufferSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    bufferSet.descriptorCount = 1;
+    bufferSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+    bufferSet.pTexelBufferView = &gPositionsView;
+    bufferSet.dstBinding = 2;
+
+    VkDescriptorBufferInfo uboDesc = {};
+    uboDesc.buffer = ubos[ 0 ].ubo;
+    uboDesc.range = VK_WHOLE_SIZE;
+
+    VkWriteDescriptorSet bufferSet2 = {};
+    bufferSet2.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    bufferSet2.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    bufferSet2.descriptorCount = 1;
+    bufferSet2.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bufferSet2.pBufferInfo = &uboDesc;
+    bufferSet2.dstBinding = 3;
+
+    VkWriteDescriptorSet bufferSet3 = {};
+    bufferSet3.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    bufferSet3.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    bufferSet3.descriptorCount = 1;
+    bufferSet3.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+    bufferSet3.pTexelBufferView = &gUVSView;
+    bufferSet3.dstBinding = 4;
+
+    constexpr unsigned setCount = 5;
+    VkWriteDescriptorSet sets[ setCount ] = { imageSet, samplerSet, bufferSet, bufferSet2, bufferSet3 };
+    vkUpdateDescriptorSets( gDevice, setCount, sets, 0, nullptr );
+
+    vkCmdBindDescriptorSets( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        gPipelineLayout, 0, 1, &gSwapchainResources[ gCurrentBuffer ].descriptorSet, 0, nullptr );
+}
+
 void CopyBuffer( VkBuffer source, VkBuffer& destination, unsigned bufferSize )
 {
     VkCommandBufferAllocateInfo cmdBufInfo = {};
@@ -1394,65 +1458,7 @@ void aeBeginFrame()
     VK_CHECK( vkBeginCommandBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, &cmdBufInfo ) );
     gCurrentDrawCommandBuffer = gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer;
 
-    VkDescriptorImageInfo samplerInfos[ TextureCount ] = {};
-
-    for (unsigned i = 0; i < TextureCount; ++i)
-    {
-        samplerInfos[ i ].sampler = sampler;
-        samplerInfos[ i ].imageView = views[ i ];
-        samplerInfos[ i ].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    }
-
-    VkWriteDescriptorSet imageSet = {};
-    imageSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    imageSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
-    imageSet.descriptorCount = TextureCount;
-    imageSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    imageSet.pImageInfo = &samplerInfos[ 0 ];
-    imageSet.dstBinding = 0;
-
-    VkWriteDescriptorSet samplerSet = {};
-    samplerSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    samplerSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
-    samplerSet.descriptorCount = 1;
-    samplerSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-    samplerSet.pImageInfo = &samplerInfos[ 0 ];
-    samplerSet.dstBinding = 1;
-
-    VkWriteDescriptorSet bufferSet = {};
-    bufferSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    bufferSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
-    bufferSet.descriptorCount = 1;
-    bufferSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    bufferSet.pTexelBufferView = &gPositionsView;
-    bufferSet.dstBinding = 2;
-
-    VkDescriptorBufferInfo uboDesc = {};
-    uboDesc.buffer = ubos[ 0 ].ubo;
-    uboDesc.range = VK_WHOLE_SIZE;
-
-    VkWriteDescriptorSet bufferSet2 = {};
-    bufferSet2.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    bufferSet2.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
-    bufferSet2.descriptorCount = 1;
-    bufferSet2.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    bufferSet2.pBufferInfo = &uboDesc;
-    bufferSet2.dstBinding = 3;
-
-    VkWriteDescriptorSet bufferSet3 = {};
-    bufferSet3.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    bufferSet3.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
-    bufferSet3.descriptorCount = 1;
-    bufferSet3.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    bufferSet3.pTexelBufferView = &gUVSView;
-    bufferSet3.dstBinding = 4;
-
-    constexpr unsigned setCount = 5;
-    VkWriteDescriptorSet sets[ setCount ] = { imageSet, samplerSet, bufferSet, bufferSet2, bufferSet3 };
-    vkUpdateDescriptorSets( gDevice, setCount, sets, 0, nullptr );
-
-    vkCmdBindDescriptorSets( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        gPipelineLayout, 0, 1, &gSwapchainResources[ gCurrentBuffer ].descriptorSet, 0, nullptr );
+    UpdateAndBindDescriptors();
 }
 
 void aeEndFrame()
