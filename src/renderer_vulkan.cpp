@@ -17,7 +17,7 @@
 
 void aeShaderGetInfo( const aeShader& shader, VkPipelineShaderStageCreateInfo& outVertexInfo, VkPipelineShaderStageCreateInfo& outFragmentInfo );
 VkBuffer VertexBufferGet( const VertexBuffer& buffer );
-void UpdateAndBindDescriptors();
+static void UpdateAndBindDescriptors();
 
 struct DepthStencil
 {
@@ -39,7 +39,9 @@ struct SwapchainResource
     VkSemaphore renderCompleteSemaphore = VK_NULL_HANDLE;
     VkSemaphore imageAcquiredSemaphore = VK_NULL_HANDLE;
     VkFence fence = VK_NULL_HANDLE;
-    VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+    static const unsigned SetCount = 100;
+    VkDescriptorSet descriptorSets[ SetCount ];
+    unsigned setIndex = 0;
 };
 
 struct UboStruct
@@ -527,6 +529,9 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
 void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex )
 {
     UpdateUBO( localToClip, localToView, lightDir, uboIndex );
+    UpdateAndBindDescriptors();
+
+    gSwapchainResources[ gCurrentBuffer ].setIndex = (gSwapchainResources[ gCurrentBuffer ].setIndex + 1) % gSwapchainResources[ gCurrentBuffer ].SetCount;
 
 	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
 	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
@@ -1200,40 +1205,39 @@ static void CreateDescriptorSets()
 
     VkDescriptorPoolSize typeCounts[ bindingCount ];
     typeCounts[ 0 ].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    typeCounts[ 0 ].descriptorCount = 3 * TextureCount;
+    typeCounts[ 0 ].descriptorCount = 3 * TextureCount * gSwapchainResources[ 0 ].SetCount;
     typeCounts[ 1 ].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-    typeCounts[ 1 ].descriptorCount = 3;
+    typeCounts[ 1 ].descriptorCount = 3 * gSwapchainResources[ 0 ].SetCount;
     typeCounts[ 2 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    typeCounts[ 2 ].descriptorCount = 3;
+    typeCounts[ 2 ].descriptorCount = 3 * gSwapchainResources[ 0 ].SetCount;
     typeCounts[ 3 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    typeCounts[ 3 ].descriptorCount = 3;
+    typeCounts[ 3 ].descriptorCount = 3 * gSwapchainResources[ 0 ].SetCount;
     typeCounts[ 4 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    typeCounts[ 4 ].descriptorCount = 3;
+    typeCounts[ 4 ].descriptorCount = 3 * gSwapchainResources[ 0 ].SetCount;
 
     VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descriptorPoolInfo.poolSizeCount = bindingCount;
     descriptorPoolInfo.pPoolSizes = typeCounts;
-    descriptorPoolInfo.maxSets = 3;
+    descriptorPoolInfo.maxSets = 3 * gSwapchainResources[ 0 ].SetCount;
     descriptorPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
     VK_CHECK( vkCreateDescriptorPool( gDevice, &descriptorPoolInfo, nullptr, &gDescriptorPool ) );
 
     VkDescriptorSetLayout layouts[ 3 ] = { gDescriptorSetLayout, gDescriptorSetLayout, gDescriptorSetLayout };
 
-    VkDescriptorSetAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = gDescriptorPool;
-    allocInfo.descriptorSetCount = 3;
-    allocInfo.pSetLayouts = layouts;
-
-    VkDescriptorSet sets[ 3 ] = {};
-        
-    VK_CHECK( vkAllocateDescriptorSets( gDevice, &allocInfo, sets ) );
-
     for (uint32_t i = 0; i < gSwapchainImageCount; ++i)
     {
-        gSwapchainResources[ i ].descriptorSet = sets[ i ];
+        for (uint32_t s = 0; s < gSwapchainResources[ 0 ].SetCount; ++s)
+        {
+            VkDescriptorSetAllocateInfo allocInfo = {};
+            allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+            allocInfo.descriptorPool = gDescriptorPool;
+            allocInfo.descriptorSetCount = 1;
+            allocInfo.pSetLayouts = &layouts[ 0 ];
+            
+            VK_CHECK( vkAllocateDescriptorSets( gDevice, &allocInfo, &gSwapchainResources[ i ].descriptorSets[ s ] ) );
+        }
     }
 
     VkPipelineLayoutCreateInfo createInfo = {};
@@ -1261,9 +1265,12 @@ static void UpdateAndBindDescriptors()
         samplerInfos[ i ].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
+    const VkDescriptorSet& dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSets[ gSwapchainResources[ gCurrentBuffer ].setIndex ];
+    //imageSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+
     VkWriteDescriptorSet imageSet = {};
     imageSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    imageSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    imageSet.dstSet = dstSet;
     imageSet.descriptorCount = TextureCount;
     imageSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     imageSet.pImageInfo = &samplerInfos[ 0 ];
@@ -1271,7 +1278,7 @@ static void UpdateAndBindDescriptors()
 
     VkWriteDescriptorSet samplerSet = {};
     samplerSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    samplerSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    samplerSet.dstSet = dstSet;
     samplerSet.descriptorCount = 1;
     samplerSet.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
     samplerSet.pImageInfo = &samplerInfos[ 0 ];
@@ -1279,7 +1286,7 @@ static void UpdateAndBindDescriptors()
 
     VkWriteDescriptorSet bufferSet = {};
     bufferSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    bufferSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    bufferSet.dstSet = dstSet;
     bufferSet.descriptorCount = 1;
     bufferSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
     bufferSet.pTexelBufferView = &gPositionsView;
@@ -1291,7 +1298,7 @@ static void UpdateAndBindDescriptors()
 
     VkWriteDescriptorSet bufferSet2 = {};
     bufferSet2.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    bufferSet2.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    bufferSet2.dstSet = dstSet;
     bufferSet2.descriptorCount = 1;
     bufferSet2.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     bufferSet2.pBufferInfo = &uboDesc;
@@ -1299,7 +1306,7 @@ static void UpdateAndBindDescriptors()
 
     VkWriteDescriptorSet bufferSet3 = {};
     bufferSet3.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    bufferSet3.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
+    bufferSet3.dstSet = dstSet;
     bufferSet3.descriptorCount = 1;
     bufferSet3.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
     bufferSet3.pTexelBufferView = &gUVSView;
@@ -1310,7 +1317,7 @@ static void UpdateAndBindDescriptors()
     vkUpdateDescriptorSets( gDevice, setCount, sets, 0, nullptr );
 
     vkCmdBindDescriptorSets( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        gPipelineLayout, 0, 1, &gSwapchainResources[ gCurrentBuffer ].descriptorSet, 0, nullptr );
+        gPipelineLayout, 0, 1, &dstSet, 0, nullptr );
 }
 
 void CopyBuffer( VkBuffer source, VkBuffer& destination, unsigned bufferSize )
@@ -1457,8 +1464,6 @@ void aeBeginFrame()
 
     VK_CHECK( vkBeginCommandBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, &cmdBufInfo ) );
     gCurrentDrawCommandBuffer = gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer;
-
-    UpdateAndBindDescriptors();
 }
 
 void aeEndFrame()
