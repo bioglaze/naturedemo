@@ -17,7 +17,7 @@
 
 void aeShaderGetInfo( const aeShader& shader, VkPipelineShaderStageCreateInfo& outVertexInfo, VkPipelineShaderStageCreateInfo& outFragmentInfo );
 VkBuffer VertexBufferGet( const VertexBuffer& buffer );
-static void UpdateAndBindDescriptors();
+static void UpdateAndBindDescriptors( const VkBufferView& positionView, const VkBufferView& uvView );
 
 struct DepthStencil
 {
@@ -529,15 +529,9 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
 void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex )
 {
     UpdateUBO( localToClip, localToView, lightDir, uboIndex );
-    UpdateAndBindDescriptors();
+    UpdateAndBindDescriptors( gPositionsView, gUVSView );
 
     gSwapchainResources[ gCurrentBuffer ].setIndex = (gSwapchainResources[ gCurrentBuffer ].setIndex + 1) % gSwapchainResources[ gCurrentBuffer ].SetCount;
-
-	VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
-	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
-
-	VkRect2D scissor = { { 0, 0 }, { gWidth, gHeight } };
-	vkCmdSetScissor( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &scissor );
 
     const VertexBuffer& indices = GetIndices( mesh );
 	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, BlendMode::Off, CullMode::Back, DepthMode::NoneWriteOff, FillMode::Solid, Topology::Triangles ) ].pso );
@@ -1254,7 +1248,7 @@ static void CreateDescriptorSets()
     VK_CHECK( vkCreatePipelineLayout( gDevice, &createInfo, nullptr, &gPipelineLayout ) );
 }
 
-static void UpdateAndBindDescriptors()
+static void UpdateAndBindDescriptors( const VkBufferView& positionView, const VkBufferView& uvView )
 {
     VkDescriptorImageInfo samplerInfos[ TextureCount ] = {};
 
@@ -1289,7 +1283,7 @@ static void UpdateAndBindDescriptors()
     bufferSet.dstSet = dstSet;
     bufferSet.descriptorCount = 1;
     bufferSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    bufferSet.pTexelBufferView = &gPositionsView;
+    bufferSet.pTexelBufferView = &positionView;
     bufferSet.dstBinding = 2;
 
     VkDescriptorBufferInfo uboDesc = {};
@@ -1309,7 +1303,7 @@ static void UpdateAndBindDescriptors()
     bufferSet3.dstSet = dstSet;
     bufferSet3.descriptorCount = 1;
     bufferSet3.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    bufferSet3.pTexelBufferView = &gUVSView;
+    bufferSet3.pTexelBufferView = &uvView;
     bufferSet3.dstBinding = 4;
 
     constexpr unsigned setCount = 5;
@@ -1464,6 +1458,12 @@ void aeBeginFrame()
 
     VK_CHECK( vkBeginCommandBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, &cmdBufInfo ) );
     gCurrentDrawCommandBuffer = gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer;
+
+    VkViewport viewport = { 0, 0, (float)gWidth, (float)gHeight, 0.0f, 1.0f };
+	vkCmdSetViewport( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &viewport );
+
+	VkRect2D scissor = { { 0, 0 }, { gWidth, gHeight } };
+	vkCmdSetScissor( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, 0, 1, &scissor );
 }
 
 void aeEndFrame()

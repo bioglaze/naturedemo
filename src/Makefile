@@ -1,7 +1,7 @@
 LINKER := *.o -ldl -lxcb -lxcb-ewmh -lxcb-keysyms -lxcb-icccm -lX11-xcb -lvulkan
 FLAGS := -std=c++14 -Wall -Wextra -Wshadow -Wunreachable-code -Wno-unused-function -pedantic -msse3
 DEFINES := -DVK_USE_PLATFORM_XCB_KHR
-CC := clang++-6.0
+CC := clang++-8
 SANITIZERS := -g -fsanitize=address,undefined
 
 SHADER1 := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e mainVS water.hlsl -o ../build/water_vs.spv)"
