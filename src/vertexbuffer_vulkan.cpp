@@ -104,6 +104,11 @@ VkBuffer VertexBufferGet( const VertexBuffer& buffer )
     return buffers[ buffer.index ].buffer;
 }
 
+VkBufferView VertexBufferGetView( const VertexBuffer& buffer )
+{
+    return buffers[ buffer.index ].view;
+}
+
 VertexBuffer CreateVertexBuffer( const void* data, unsigned dataBytes, BufferType bufferType, BufferUsage bufferUsage, const char* debugName )
 {
     assert( dataBytes > 0 );

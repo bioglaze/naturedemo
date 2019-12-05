@@ -17,6 +17,7 @@
 
 void aeShaderGetInfo( const aeShader& shader, VkPipelineShaderStageCreateInfo& outVertexInfo, VkPipelineShaderStageCreateInfo& outFragmentInfo );
 VkBuffer VertexBufferGet( const VertexBuffer& buffer );
+VkBufferView VertexBufferGetView( const VertexBuffer& buffer );
 static void UpdateAndBindDescriptors( const VkBufferView& positionView, const VkBufferView& uvView );
 
 struct DepthStencil
@@ -529,7 +530,7 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
 void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex )
 {
     UpdateUBO( localToClip, localToView, lightDir, uboIndex );
-    UpdateAndBindDescriptors( gPositionsView, gUVSView );
+	UpdateAndBindDescriptors( gPositionsView, gUVSView );
 
     gSwapchainResources[ gCurrentBuffer ].setIndex = (gSwapchainResources[ gCurrentBuffer ].setIndex + 1) % gSwapchainResources[ gCurrentBuffer ].SetCount;
 

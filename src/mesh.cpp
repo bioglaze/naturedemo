@@ -97,3 +97,13 @@ const struct VertexBuffer& GetIndices( const aeMesh& mesh )
 {
     return meshes[ mesh.index ].indices;
 }
+
+const struct VertexBuffer& GetPositions( const aeMesh& mesh )
+{
+    return meshes[ mesh.index ].positions;
+}
+
+const struct VertexBuffer& GetUVs( const aeMesh& mesh )
+{
+    return meshes[ mesh.index ].uvs;
+}
