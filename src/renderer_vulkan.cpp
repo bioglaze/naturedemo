@@ -530,7 +530,7 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
 void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex )
 {
     UpdateUBO( localToClip, localToView, lightDir, uboIndex );
-	UpdateAndBindDescriptors( gPositionsView, gUVSView );
+	UpdateAndBindDescriptors( VertexBufferGetView( GetPositions( mesh ) ), VertexBufferGetView( GetUVs( mesh ) ) );
 
     gSwapchainResources[ gCurrentBuffer ].setIndex = (gSwapchainResources[ gCurrentBuffer ].setIndex + 1) % gSwapchainResources[ gCurrentBuffer ].SetCount;
 
@@ -1261,7 +1261,6 @@ static void UpdateAndBindDescriptors( const VkBufferView& positionView, const Vk
     }
 
     const VkDescriptorSet& dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSets[ gSwapchainResources[ gCurrentBuffer ].setIndex ];
-    //imageSet.dstSet = gSwapchainResources[ gCurrentBuffer ].descriptorSet;
 
     VkWriteDescriptorSet imageSet = {};
     imageSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
