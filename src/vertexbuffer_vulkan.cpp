@@ -13,10 +13,6 @@ extern VkPhysicalDeviceMemoryProperties gDeviceMemoryProperties;
 extern VkQueue gGraphicsQueue;
 extern VkCommandPool gCmdPool;
 
-// TODO remove!
-extern VkBufferView gPositionsView;
-extern VkBufferView gUVSView;
-
 void SetObjectName( VkDevice device, uint64_t object, VkObjectType objectType, const char* name );
 uint32_t GetMemoryType( uint32_t typeBits, const VkPhysicalDeviceMemoryProperties& deviceMemoryProperties, VkFlags properties );
 
@@ -173,16 +169,6 @@ VertexBuffer CreateVertexBuffer( const void* data, unsigned dataBytes, BufferTyp
     {
         VK_CHECK( vkCreateBufferView( gDevice, &bufferViewInfo, nullptr, &buffers[ outBuffer.index ].view ) );
         SetObjectName( gDevice, (uint64_t)buffers[ outBuffer.index ].view, VK_OBJECT_TYPE_BUFFER_VIEW, "buffer view" );
-
-        // TODO remove
-        if (bufferType == BufferType::Float3)
-        {
-            gPositionsView = buffers[ outBuffer.index ].view;
-        }
-        else if (bufferType == BufferType::Float2)
-        {
-            gUVSView = buffers[ outBuffer.index ].view;
-        }
     }
 
     return outBuffer;

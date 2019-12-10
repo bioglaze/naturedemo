@@ -99,8 +99,6 @@ VkCommandBuffer gCurrentDrawCommandBuffer;
 constexpr unsigned TextureCount = 20;
 VkSampler sampler;
 VkImageView views[ TextureCount ];
-VkBufferView gPositionsView;
-VkBufferView gUVSView;
 VkPipelineLayout gPipelineLayout = VK_NULL_HANDLE;
 VkCommandBuffer gTexCommandBuffer;
 VkDescriptorSetLayout gDescriptorSetLayout;
