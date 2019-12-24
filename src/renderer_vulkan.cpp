@@ -483,17 +483,6 @@ static VkPipeline CreatePipeline( const aeShader& shader, BlendMode blendMode, C
 static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMode, DepthMode depthMode, FillMode fillMode, Topology topology )
 {
     int psoIndex = -1;
-    int nextFreePsoIndex = -1;
-
-    for (int i = 0; i < 250; ++i)
-    {
-        if (gPsos[ i ].pso == VK_NULL_HANDLE)
-        {
-            nextFreePsoIndex = i;
-        }
-    }
-
-    assert( nextFreePsoIndex != -1 );
 
     VkPipelineShaderStageCreateInfo vertexInfo, fragmentInfo;
     aeShaderGetInfo( shader, vertexInfo, fragmentInfo );
@@ -511,6 +500,18 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
 
     if (psoIndex == -1)
     {
+        int nextFreePsoIndex = -1;
+
+        for (int i = 0; i < 250; ++i)
+        {
+            if (gPsos[ i ].pso == VK_NULL_HANDLE)
+            {
+                nextFreePsoIndex = i;
+            }
+        }
+
+        assert( nextFreePsoIndex != -1 );
+
         psoIndex = nextFreePsoIndex;
         gPsos[ psoIndex ].pso = CreatePipeline( shader, blendMode, cullMode, depthMode, fillMode, topology );
         gPsos[ psoIndex ].blendMode = blendMode;
