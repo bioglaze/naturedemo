@@ -30,6 +30,7 @@ struct DepthStencil
 struct SwapchainResource
 {
     DepthStencil depthStencil;
+    DepthStencil depthResolve;
     VkImage image = VK_NULL_HANDLE;
     VkImage msaaColorImage = VK_NULL_HANDLE;
     VkImageView view = VK_NULL_HANDLE;
@@ -534,7 +535,7 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
     gSwapchainResources[ gCurrentBuffer ].setIndex = (gSwapchainResources[ gCurrentBuffer ].setIndex + 1) % gSwapchainResources[ gCurrentBuffer ].SetCount;
 
     const VertexBuffer& indices = GetIndices( mesh );
-	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, BlendMode::Off, CullMode::Back, DepthMode::NoneWriteOff, FillMode::Solid, Topology::Triangles ) ].pso );
+	vkCmdBindPipeline( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gPsos[ GetPSO( shader, BlendMode::Off, CullMode::Back, DepthMode::LessOrEqualWriteOn, FillMode::Solid, Topology::Triangles ) ].pso );
 	vkCmdBindIndexBuffer( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, VertexBufferGet( indices ), 0, VK_INDEX_TYPE_UINT16 );
 
     static float timeSecs = 0;
@@ -834,7 +835,7 @@ static bool CreateSwapchain( unsigned& width, unsigned& height, int presentInter
 
 static void CreateRenderPassMSAA()
 {
-	VkAttachmentDescription attachments[ 3 ] = {};
+	VkAttachmentDescription attachments[ 4 ] = {};
 
     attachments[ 0 ].format = gColorFormat;
     attachments[ 0 ].samples = gMsaaSampleBits;
@@ -845,44 +846,64 @@ static void CreateRenderPassMSAA()
     attachments[ 0 ].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[ 0 ].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    attachments[ 1 ].format = gDepthFormat;
-    attachments[ 1 ].samples = gMsaaSampleBits;
-    attachments[ 1 ].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    attachments[ 1 ].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[ 1 ].format = gColorFormat;
+    attachments[ 1 ].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[ 1 ].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[ 1 ].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     attachments[ 1 ].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     attachments[ 1 ].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachments[ 1 ].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachments[ 1 ].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    attachments[ 1 ].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    attachments[ 2 ].format = gColorFormat;
-    attachments[ 2 ].samples = VK_SAMPLE_COUNT_1_BIT;
-    attachments[ 2 ].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[ 2 ].format = gDepthFormat;
+    attachments[ 2 ].samples = gMsaaSampleBits;
+    attachments[ 2 ].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[ 2 ].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     attachments[ 2 ].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
     attachments[ 2 ].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     attachments[ 2 ].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    attachments[ 2 ].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+    attachments[ 2 ].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    constexpr VkAttachmentReference colorReference = { 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
-    constexpr VkAttachmentReference depthReference = { 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-    constexpr VkAttachmentReference colorResolveReference = { 2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL };
+    attachments[ 3 ].format = gDepthFormat;
+    attachments[ 3 ].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[ 3 ].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    attachments[ 3 ].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[ 3 ].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[ 3 ].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[ 3 ].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[ 3 ].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+    VkAttachmentReference colorReference = {};
+    colorReference.attachment = 0;
+    colorReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    
+    VkAttachmentReference depthReference = {};
+    depthReference.attachment = 2;
+    depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    
+    // Two resolve attachment references for color and depth
+    VkAttachmentReference resolveReferences[ 2 ] = {};
+    resolveReferences[ 0 ].attachment = 1;
+    resolveReferences[ 0 ].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    resolveReferences[ 1 ].attachment = 3;
+    resolveReferences[ 1 ].layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorReference;
-    subpass.pResolveAttachments = &colorResolveReference;
+    // Pass our resolve attachments to the sub pass
+    subpass.pResolveAttachments = &resolveReferences[ 0 ];
     subpass.pDepthStencilAttachment = &depthReference;
-
+    
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 3;
+    renderPassInfo.attachmentCount = 4;
     renderPassInfo.pAttachments = &attachments[ 0 ];
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
-
-    VkResult err = vkCreateRenderPass( gDevice, &renderPassInfo, nullptr, &gRenderPass );
-    assert( err == VK_SUCCESS );
+    
+    VK_CHECK( vkCreateRenderPass( gDevice, &renderPassInfo, nullptr, &gRenderPass ) );
 }
 
 static void CreateCommandBuffers()
@@ -1044,12 +1065,12 @@ static bool CreateDevice()
 
 static void CreateFramebufferMSAA( int width, int height )
 {
-    VkImageView attachments[ 3 ] = {};
+    VkImageView attachments[ 4 ] = {};
 
     VkFramebufferCreateInfo frameBufferCreateInfo = {};
     frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
     frameBufferCreateInfo.renderPass = gRenderPass;
-    frameBufferCreateInfo.attachmentCount = 3;
+    frameBufferCreateInfo.attachmentCount = 4;
     frameBufferCreateInfo.pAttachments = attachments;
     frameBufferCreateInfo.width = width;
     frameBufferCreateInfo.height = height;
@@ -1101,8 +1122,10 @@ static void CreateFramebufferMSAA( int width, int height )
         SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].msaaColorView, VK_OBJECT_TYPE_IMAGE_VIEW, "msaaColorView" );
 
         attachments[ 0 ] = gSwapchainResources[ i ].msaaColorView;
-        attachments[ 1 ] = gSwapchainResources[ i ].depthStencil.view;
-        attachments[ 2 ] = gSwapchainResources[ i ].view;
+        attachments[ 1 ] = gSwapchainResources[ i ].view;
+        attachments[ 2 ] = gSwapchainResources[ i ].depthStencil.view;
+        attachments[ 3 ] = gSwapchainResources[ i ].depthResolve.view;
+
         VK_CHECK( vkCreateFramebuffer( gDevice, &frameBufferCreateInfo, nullptr, &gSwapchainResources[ i ].frameBuffer ) );
         SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].frameBuffer, VK_OBJECT_TYPE_FRAMEBUFFER, "framebuffer" );
     }
@@ -1152,6 +1175,50 @@ static void CreateDepthStencil( uint32_t width, uint32_t height )
         depthStencilView.image = gSwapchainResources[ i ].depthStencil.image;
         VK_CHECK( vkCreateImageView( gDevice, &depthStencilView, nullptr, &gSwapchainResources[ i ].depthStencil.view ) );
         SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].depthStencil.view, VK_OBJECT_TYPE_IMAGE_VIEW, "depthStencil view" );
+
+        // MSAA depth resolve:
+        VkImageCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        info.imageType = VK_IMAGE_TYPE_2D;
+        info.format = gDepthFormat;
+        info.extent = { width, height, 1 };
+        info.mipLevels = 1;
+        info.arrayLayers = 1;
+        info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        info.tiling = VK_IMAGE_TILING_OPTIMAL;
+        info.samples = VK_SAMPLE_COUNT_1_BIT;
+        info.usage = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        VK_CHECK( vkCreateImage( gDevice, &info, nullptr, &gSwapchainResources[ i ].depthResolve.image ) );
+        SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].depthResolve.image, VK_OBJECT_TYPE_IMAGE, "depthResolve" );
+
+        vkGetImageMemoryRequirements( gDevice, gSwapchainResources[ i ].depthResolve.image, &memReqs );
+        VkMemoryAllocateInfo memAlloc = {};
+        memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        memAlloc.allocationSize = memReqs.size;
+        memAlloc.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+
+        VK_CHECK( vkAllocateMemory( gDevice, &memAlloc, nullptr, &gSwapchainResources[ i ].depthResolve.mem ) );
+        SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].depthResolve.mem, VK_OBJECT_TYPE_DEVICE_MEMORY, "depthResolve" );
+
+        vkBindImageMemory( gDevice, gSwapchainResources[ i ].depthResolve.image, gSwapchainResources[ i ].depthResolve.mem, 0 );
+
+        // Create image view for the MSAA target
+        VkImageViewCreateInfo viewInfo = {};
+        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        viewInfo.image = gSwapchainResources[ i ].depthResolve.image;
+        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        viewInfo.format = gDepthFormat;
+        viewInfo.components.r = VK_COMPONENT_SWIZZLE_R;
+        viewInfo.components.g = VK_COMPONENT_SWIZZLE_G;
+        viewInfo.components.b = VK_COMPONENT_SWIZZLE_B;
+        viewInfo.components.a = VK_COMPONENT_SWIZZLE_A;
+        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+        viewInfo.subresourceRange.levelCount = 1;
+        viewInfo.subresourceRange.layerCount = 1;
+
+        VK_CHECK( vkCreateImageView( gDevice, &viewInfo, nullptr, &gSwapchainResources[ i ].depthResolve.view ) );
     }
 }
 
@@ -1404,7 +1471,7 @@ void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* c
 
 void aeBeginRenderPass()
 {
-    VkClearValue clearValues[ 3 ] = {};
+    VkClearValue clearValues[ 4 ] = {};
     
     clearValues[ 2 ].depthStencil = { 1.0f, 0 };
 
@@ -1412,7 +1479,7 @@ void aeBeginRenderPass()
     renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassBeginInfo.renderPass = gRenderPass;
     renderPassBeginInfo.renderArea = { { 0, 0, }, { gWidth, gHeight } };
-    renderPassBeginInfo.clearValueCount = gMsaaSampleBits != VK_SAMPLE_COUNT_1_BIT ? 3 : 2;
+    renderPassBeginInfo.clearValueCount = gMsaaSampleBits != VK_SAMPLE_COUNT_1_BIT ? 4 : 2;
     renderPassBeginInfo.pClearValues = clearValues;
     renderPassBeginInfo.framebuffer = gSwapchainResources[ gCurrentBuffer ].frameBuffer;
 
