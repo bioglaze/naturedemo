@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2019-10-29
+  Modified: 2020-01-06
  */
 #include <stdio.h>
 #include <math.h>
@@ -128,6 +128,7 @@ int main()
     aeFile wave1nFile = aeLoadFile( "wave1_n.tga" );
     aeFile noiseFile = aeLoadFile( "perlin_noise.tga" );
     aeFile planeFile = aeLoadFile( "plane.a3d" );
+    aeFile terrainFile = aeLoadFile( "terrain.a3d" );
 
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
@@ -140,7 +141,8 @@ int main()
     aeTexture2D sky2Tex = wave1Tex;
     aeMesh water = aeLoadMeshFile( planeFile );
     aeMesh sky = aeCreatePlane();
-    aeMesh ground = aeCreatePlane();
+    //aeMesh ground = aeCreatePlane();
+    aeMesh ground = aeLoadMeshFile( terrainFile );
 
     if (window.index == -1)
     {
@@ -260,7 +262,14 @@ int main()
         Matrix::Multiply( skyView, viewToClip, skyMatrix );
 
         groundMatrix.MakeIdentity();
-        groundMatrix.Translate( { 2, -1, 5 } );
+        //groundMatrix.Scale( 0.5f, 0.5f, 0.5f );
+        Quaternion planeRot;
+        planeRot.FromAxisAngle( { 1, 0, 0 }, 90 );
+        Matrix rotMat;
+        planeRot.GetMatrix( rotMat );
+        Matrix::Multiply( groundMatrix, rotMat, groundMatrix );
+        groundMatrix.Translate( { 2, -10, 5 } );
+
         Matrix groundView;
         Matrix::Multiply( groundMatrix, cameraTransform.localMatrix, groundView );
         Matrix::Multiply( groundView, viewToClip, groundMatrix );
