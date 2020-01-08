@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2020-01-06
+  Modified: 2020-01-08
  */
 #include <stdio.h>
 #include <math.h>
@@ -129,13 +129,15 @@ int main()
     aeFile noiseFile = aeLoadFile( "perlin_noise.tga" );
     aeFile planeFile = aeLoadFile( "plane.a3d" );
     aeFile terrainFile = aeLoadFile( "terrain.a3d" );
+    aeFile grassFile = aeLoadFile( "grass.tga" );
 
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
-    aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB );
-    aeTexture2D wave1Tex = aeLoadTexture( wave1File, aeTextureFlags::SRGB );
+    aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
+    aeTexture2D wave1Tex = aeLoadTexture( wave1File, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
     aeTexture2D wave1nTex = aeLoadTexture( wave1nFile, aeTextureFlags::Empty );
+    aeTexture2D grassTex = aeLoadTexture( grassFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
     aeTexture2D sky1Tex = wave1Tex;
     aeTexture2D sky2Tex = wave1Tex;
@@ -282,7 +284,7 @@ int main()
 
         aeRenderMesh( water, waterShader, waterMatrix, waterView, wave1Tex, wave1nTex, lightDir, 0 );
         aeRenderMesh( sky, skyShader, skyMatrix, skyView, sky1Tex, sky2Tex, lightDir, 1 );
-        aeRenderMesh( ground, groundShader, groundMatrix, groundView, gliderTex, gliderTex, lightDir, 2 );
+        aeRenderMesh( ground, groundShader, groundMatrix, groundView, grassTex, grassTex, lightDir, 2 );
 
         aeEndRenderPass();
         aeEndFrame();

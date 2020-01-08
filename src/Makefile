@@ -4,12 +4,12 @@ DEFINES := -DVK_USE_PLATFORM_XCB_KHR
 CC := clang++-8
 SANITIZERS := -g -fsanitize=address,undefined
 
-SHADER1 := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e mainVS water.hlsl -o ../build/water_vs.spv)"
-SHADER2 := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S frag -e mainFS water.hlsl -o ../build/water_fs.spv)"
-SHADER3 := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e mainVS sky.hlsl -o ../build/sky_vs.spv)"
-SHADER4 := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S frag -e mainFS sky.hlsl -o ../build/sky_fs.spv)"
-SHADER5 := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S vert -e mainVS ground.hlsl -o ../build/ground_vs.spv)"
-SHADER6 := "$(shell $$VULKAN_SDK/bin/glslangValidator -D -V -S frag -e mainFS ground.hlsl -o ../build/ground_fs.spv)"
+SHADER1 := "$(shell glslangValidator -D -V -S vert -e mainVS water.hlsl -o ../build/water_vs.spv)"
+SHADER2 := "$(shell glslangValidator -D -V -S frag -e mainFS water.hlsl -o ../build/water_fs.spv)"
+SHADER3 := "$(shell glslangValidator -D -V -S vert -e mainVS sky.hlsl -o ../build/sky_vs.spv)"
+SHADER4 := "$(shell glslangValidator -D -V -S frag -e mainFS sky.hlsl -o ../build/sky_fs.spv)"
+SHADER5 := "$(shell glslangValidator -D -V -S vert -e mainVS ground.hlsl -o ../build/ground_vs.spv)"
+SHADER6 := "$(shell glslangValidator -D -V -S frag -e mainFS ground.hlsl -o ../build/ground_fs.spv)"
 
 all:
 	echo $(SHADER1)
