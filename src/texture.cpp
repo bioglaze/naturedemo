@@ -239,9 +239,9 @@ aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
         VkImageBlit imageBlit = {};
         imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageBlit.srcSubresource.layerCount = 1;
-        imageBlit.srcSubresource.mipLevel = i - 1;
+        imageBlit.srcSubresource.mipLevel = 0;
         imageBlit.srcOffsets[ 0 ] = { 0, 0, 0 };
-        imageBlit.srcOffsets[ 1 ] = { int32_t( tex.width >> (i - 1) ), int32_t( tex.height >> (i - 1) ), 1 };
+        imageBlit.srcOffsets[ 1 ] = { int32_t( tex.width ), int32_t( tex.height ), 1 };
 
         imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageBlit.dstSubresource.baseArrayLayer = 0;

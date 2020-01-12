@@ -159,7 +159,7 @@ int main()
 
     Transform cameraTransform;
     Matrix viewToClip;
-    viewToClip.MakeProjection( 45.0f, width / float( height ), 0.1f, 200.0f );
+    viewToClip.MakeProjection( 45.0f, width / float( height ), 0.1f, 400.0f );
     
     TransformLookAt( cameraTransform, { 0, 0, 0 }, { 0, 0, -400 }, { 0, 1, 0 } );
 
