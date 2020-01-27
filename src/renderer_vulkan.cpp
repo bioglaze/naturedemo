@@ -60,7 +60,7 @@ struct Ubo
     VkDeviceMemory uboMemory = VK_NULL_HANDLE;
     VkDescriptorBufferInfo uboDesc = {};
     UboStruct* uboData = nullptr;
-} ubos[ 3 ];
+} ubos[ 4 ];
 
 struct PSO
 {
@@ -81,7 +81,7 @@ VkPhysicalDevice gPhysicalDevice;
 VkInstance gInstance;
 VkDebugUtilsMessengerEXT gDbgMessenger;
 uint32_t gGraphicsQueueNodeIndex = 0;
-SwapchainResource gSwapchainResources[ 3 ] = {};
+SwapchainResource gSwapchainResources[ 4 ] = {};
 VkCommandPool gCmdPool;
 VkPhysicalDeviceProperties gProperties = {};
 VkPhysicalDeviceFeatures gFeatures = {};
@@ -797,13 +797,13 @@ static bool CreateSwapchain( unsigned& width, unsigned& height, int presentInter
 
     VK_CHECK( getSwapchainImagesKHR( gDevice, gSwapchain, &gSwapchainImageCount, nullptr ) );
 
-    if (gSwapchainImageCount == 0 || gSwapchainImageCount > 3)
+    if (gSwapchainImageCount == 0 || gSwapchainImageCount > 4)
     {
         printf( "Invalid count of swapchain images!\n ");
         return false;
     }
 
-    VkImage images[ 3 ];
+    VkImage images[ 4 ] = {};
     VK_CHECK( getSwapchainImagesKHR( gDevice, gSwapchain, &gSwapchainImageCount, images ) );
 
     VkCommandBufferBeginInfo cmdBufInfo = {};
@@ -918,12 +918,12 @@ static void CreateCommandBuffers()
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     commandBufferAllocateInfo.commandPool = gCmdPool;
     commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    commandBufferAllocateInfo.commandBufferCount = 3;
+    commandBufferAllocateInfo.commandBufferCount = 4;
 
-    VkCommandBuffer drawCmdBuffers[ 3 ];
+    VkCommandBuffer drawCmdBuffers[ 4 ];
     VK_CHECK( vkAllocateCommandBuffers( gDevice, &commandBufferAllocateInfo, drawCmdBuffers ) );
 
-    for (uint32_t i = 0; i < 3; ++i)
+    for (uint32_t i = 0; i < 4; ++i)
     {
         gSwapchainResources[ i ].drawCommandBuffer = drawCmdBuffers[ i ];
         const char* name = "drawCommandBuffer 0";
@@ -957,7 +957,7 @@ static void CreateUBO()
 {
     constexpr VkDeviceSize uboSize = 256 * 3 + 80 * 64;
 
-    for (unsigned i = 0; i < 3; ++i)
+    for (unsigned i = 0; i < 4; ++i)
     {
         VkBufferCreateInfo bufferInfo = {};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1144,7 +1144,7 @@ static void CreateDepthStencil( uint32_t width, uint32_t height )
     image.tiling = VK_IMAGE_TILING_OPTIMAL;
     image.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
 
-    for (unsigned i = 0; i < 3; ++i)
+    for (unsigned i = 0; i < 4; ++i)
     {
         VK_CHECK( vkCreateImage( gDevice, &image, nullptr, &gSwapchainResources[ i ].depthStencil.image ) );
         SetObjectName( gDevice, (uint64_t)gSwapchainResources[ i ].depthStencil.image, VK_OBJECT_TYPE_IMAGE, "depthStencil" );
@@ -1266,26 +1266,24 @@ static void CreateDescriptorSets()
 
     VkDescriptorPoolSize typeCounts[ bindingCount ];
     typeCounts[ 0 ].type = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    typeCounts[ 0 ].descriptorCount = 3 * TextureCount * gSwapchainResources[ 0 ].SetCount;
+    typeCounts[ 0 ].descriptorCount = 4 * TextureCount * gSwapchainResources[ 0 ].SetCount;
     typeCounts[ 1 ].type = VK_DESCRIPTOR_TYPE_SAMPLER;
-    typeCounts[ 1 ].descriptorCount = 3 * gSwapchainResources[ 0 ].SetCount;
+    typeCounts[ 1 ].descriptorCount = 4 * gSwapchainResources[ 0 ].SetCount;
     typeCounts[ 2 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    typeCounts[ 2 ].descriptorCount = 3 * gSwapchainResources[ 0 ].SetCount;
+    typeCounts[ 2 ].descriptorCount = 4 * gSwapchainResources[ 0 ].SetCount;
     typeCounts[ 3 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    typeCounts[ 3 ].descriptorCount = 3 * gSwapchainResources[ 0 ].SetCount;
+    typeCounts[ 3 ].descriptorCount = 4 * gSwapchainResources[ 0 ].SetCount;
     typeCounts[ 4 ].type = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-    typeCounts[ 4 ].descriptorCount = 3 * gSwapchainResources[ 0 ].SetCount;
+    typeCounts[ 4 ].descriptorCount = 4 * gSwapchainResources[ 0 ].SetCount;
 
     VkDescriptorPoolCreateInfo descriptorPoolInfo = {};
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     descriptorPoolInfo.poolSizeCount = bindingCount;
     descriptorPoolInfo.pPoolSizes = typeCounts;
-    descriptorPoolInfo.maxSets = 3 * gSwapchainResources[ 0 ].SetCount;
+    descriptorPoolInfo.maxSets = 4 * gSwapchainResources[ 0 ].SetCount;
     descriptorPoolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
     VK_CHECK( vkCreateDescriptorPool( gDevice, &descriptorPoolInfo, nullptr, &gDescriptorPool ) );
-
-    VkDescriptorSetLayout layouts[ 3 ] = { gDescriptorSetLayout, gDescriptorSetLayout, gDescriptorSetLayout };
 
     for (uint32_t i = 0; i < gSwapchainImageCount; ++i)
     {
@@ -1295,7 +1293,7 @@ static void CreateDescriptorSets()
             allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
             allocInfo.descriptorPool = gDescriptorPool;
             allocInfo.descriptorSetCount = 1;
-            allocInfo.pSetLayouts = &layouts[ 0 ];
+            allocInfo.pSetLayouts = &gDescriptorSetLayout;
             
             VK_CHECK( vkAllocateDescriptorSets( gDevice, &allocInfo, &gSwapchainResources[ i ].descriptorSets[ s ] ) );
         }
