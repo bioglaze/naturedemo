@@ -56,6 +56,9 @@
       <AdditionalDependencies>vulkan-1.lib;user32.lib;gdi32.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>%VULKAN_SDK%\Lib</AdditionalLibraryDirectories>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -74,6 +77,9 @@
       <AdditionalLibraryDirectories>%VULKAN_SDK%\Lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;user32.lib;gdi32.lib</AdditionalDependencies>
     </Link>
+    <Manifest>
+      <EnableDpiAwareness>true</EnableDpiAwareness>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\file.cpp" />
