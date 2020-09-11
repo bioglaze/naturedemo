@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2020-01-08
+  Modified: 2020-09-11
  */
 #include <stdio.h>
 #include <math.h>
@@ -21,7 +21,7 @@
 #include "window.hpp"
 
 void aeInitRenderer( unsigned width, unsigned height, struct xcb_connection_t* connection, unsigned window );
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex );
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex, float uvScale );
 void aeBeginFrame();
 void aeEndFrame();
 void aeBeginRenderPass();
@@ -282,9 +282,9 @@ int main()
         Vec3 lightDir{ 0, 1, 1 };
         lightDir.Normalize();
 
-        aeRenderMesh( water, waterShader, waterMatrix, waterView, wave1Tex, wave1nTex, lightDir, 0 );
-        aeRenderMesh( sky, skyShader, skyMatrix, skyView, sky1Tex, sky2Tex, lightDir, 1 );
-        aeRenderMesh( ground, groundShader, groundMatrix, groundView, grassTex, grassTex, lightDir, 2 );
+        aeRenderMesh( water, waterShader, waterMatrix, waterView, wave1Tex, wave1nTex, lightDir, 0, 8.25f );
+        aeRenderMesh( sky, skyShader, skyMatrix, skyView, sky1Tex, sky2Tex, lightDir, 1, 1 );
+        aeRenderMesh( ground, groundShader, groundMatrix, groundView, grassTex, grassTex, lightDir, 2, 1 );
 
         aeEndRenderPass();
         aeEndFrame();

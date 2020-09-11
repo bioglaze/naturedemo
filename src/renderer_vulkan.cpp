@@ -20,6 +20,15 @@ VkBuffer VertexBufferGet( const VertexBuffer& buffer );
 VkBufferView VertexBufferGetView( const VertexBuffer& buffer );
 static void UpdateAndBindDescriptors( const VkBufferView& positionView, const VkBufferView& uvView );
 
+struct PushConstants
+{
+    unsigned uboIndex;
+    unsigned texture1Index;
+    unsigned texture2Index;
+    float timeSecs;
+    float uvScale;
+};
+
 struct DepthStencil
 {
     VkImage image = VK_NULL_HANDLE;
@@ -525,7 +534,7 @@ static int GetPSO( const aeShader& shader, BlendMode blendMode, CullMode cullMod
     return psoIndex;
 }
 
-void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex )
+void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& localToClip, const Matrix& localToView, const aeTexture2D& texture, const aeTexture2D& texture2, const Vec3& lightDir, unsigned uboIndex, float uvScale )
 {
     UpdateUBO( localToClip, localToView, lightDir, uboIndex );
 	UpdateAndBindDescriptors( VertexBufferGetView( GetPositions( mesh ) ), VertexBufferGetView( GetUVs( mesh ) ) );
@@ -538,16 +547,8 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
 
     static float timeSecs = 0;
     timeSecs += 0.0005f;
-
-    struct PushConstants
-    {
-        unsigned uboIndex;
-        unsigned texture1Index;
-        unsigned texture2Index;
-        float timeSecs;
-    };
     
-    PushConstants pushConstants = { uboIndex, (unsigned)texture.index, (unsigned)texture2.index, timeSecs };
+    PushConstants pushConstants = { uboIndex, (unsigned)texture.index, (unsigned)texture2.index, timeSecs, uvScale };
     
 	vkCmdPushConstants( gSwapchainResources[ gCurrentBuffer ].drawCommandBuffer, gPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof( pushConstants ), &pushConstants );
 
@@ -1304,7 +1305,7 @@ static void CreateDescriptorSets()
 
     VkPushConstantRange pushConstantRange = {};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-    pushConstantRange.size = sizeof( int ) * 4;
+    pushConstantRange.size = sizeof( PushConstants );
 
     createInfo.pushConstantRangeCount = 1;
     createInfo.pPushConstantRanges = &pushConstantRange;

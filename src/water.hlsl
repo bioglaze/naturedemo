@@ -24,6 +24,7 @@ layout(push_constant) cbuffer PushConstants
     int texture1Index;
     int texture2Index;
     float timeSecs;
+    float uvScale;
 } pushConstants;
 
 struct VSOutput
@@ -77,7 +78,7 @@ VSOutput mainVS( uint vertexId : SV_VertexID )
 
 float4 mainFS( VSOutput vsOut ) : SV_Target
 {
-    float3 normal = normalize( textures[ pushConstants.texture2Index ].Sample( sLinear, vsOut.uv ).xyz * 2 + 1 );
+    float3 normal = normalize( textures[ pushConstants.texture2Index ].Sample( sLinear, vsOut.uv * uvScale ).xyz * 2 + 1 );
     float4 normalView = mul( data[ pushConstants.uboIndex ].localToView, float4( normal, 0 ) );
     float diffuse = max( dot( normal, data[ pushConstants.uboIndex ].lightDir ), 0.0f );
     float4 diffuse4 = diffuse;
@@ -90,5 +91,5 @@ float4 mainFS( VSOutput vsOut ) : SV_Target
     
     float specular = pow( max( 0.0, dot( normalize( vsOut.surfaceToCamera ), normalize( reflect( -surfaceToLightView.xyz, normalView.xyz ) ) ) ), shininess );
 
-    return textures[ pushConstants.texture1Index ].Sample( sLinear, vsOut.uv ) * diffuse4 + specular;
+    return textures[ pushConstants.texture1Index ].Sample( sLinear, vsOut.uv * uvScale ) * diffuse4 + specular;
 }

@@ -24,6 +24,7 @@ layout(push_constant) cbuffer PushConstants
     int texture1Index;
     int texture2Index;
     float timeSecs;
+    float uvScale;
 } pushConstants;
 
 struct VSOutput
