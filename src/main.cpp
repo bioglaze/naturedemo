@@ -136,7 +136,7 @@ int main()
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
     aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
     aeTexture2D wave1Tex = aeLoadTexture( wave1File, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
-    aeTexture2D wave1nTex = aeLoadTexture( wave1nFile, aeTextureFlags::Empty );
+    aeTexture2D wave1nTex = aeLoadTexture( wave1nFile, aeTextureFlags::GenerateMips );
     aeTexture2D grassTex = aeLoadTexture( grassFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
     aeTexture2D sky1Tex = wave1Tex;
