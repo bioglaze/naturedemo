@@ -716,12 +716,13 @@ static bool CreateSwapchain( unsigned& width, unsigned& height, int presentInter
     }
 
     uint32_t formatCount = 0;
+    const uint32_t maxFormats = 30;
     err = getPhysicalDeviceSurfaceFormatsKHR( gPhysicalDevice, gSurface, &formatCount, nullptr );
-    assert( err == VK_SUCCESS && formatCount > 0 && formatCount < 20 && "Invalid format count" );
+    assert( err == VK_SUCCESS && formatCount > 0 && formatCount < maxFormats && "Invalid format count" );
         
-    VkSurfaceFormatKHR surfFormats[ 20 ];        
+    VkSurfaceFormatKHR surfFormats[ maxFormats ];
     err = getPhysicalDeviceSurfaceFormatsKHR( gPhysicalDevice, gSurface, &formatCount, surfFormats );
-    assert( err == VK_SUCCESS && formatCount < 20 && "Too many formats!" );
+    assert( err == VK_SUCCESS && formatCount < maxFormats && "Too many formats!" );
     
     bool foundSRGB = false;
 
