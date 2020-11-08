@@ -557,17 +557,11 @@ void aeRenderMesh( const aeMesh& mesh, const aeShader& shader, const Matrix& loc
 
 static void CreateInstance( VkInstance& outInstance )
 {
-    typedef VkResult(VKAPI_PTR * FuncPtrEnumerateInstanceVersion)(uint32_t * pApiVersion);
-    FuncPtrEnumerateInstanceVersion vulkan11EnumerateInstanceVersion = (FuncPtrEnumerateInstanceVersion)vkGetInstanceProcAddr( VK_NULL_HANDLE, "vkEnumerateInstanceVersion" );
-
-    uint32_t apiVersion = 0;
-    const bool isVulkan11 = vulkan11EnumerateInstanceVersion && vulkan11EnumerateInstanceVersion( &apiVersion ) == VK_SUCCESS && VK_MAKE_VERSION( 1, 1, 0 ) <= apiVersion;
-    
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "NatureDemo";
     appInfo.pEngineName = "NatureDemo";
-    appInfo.apiVersion = isVulkan11 ? VK_API_VERSION_1_1 : VK_API_VERSION_1_0;
+    appInfo.apiVersion = VK_API_VERSION_1_1;
 
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties( nullptr, &extensionCount, nullptr );
