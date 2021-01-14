@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2020-09-11
+  Modified: 2021-01-14
  */
 #include <stdio.h>
 #include <math.h>
@@ -134,10 +134,10 @@ int main()
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
-    aeTexture2D gliderTex = aeLoadTexture( gliderFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
-    aeTexture2D wave1Tex = aeLoadTexture( wave1File, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
-    aeTexture2D wave1nTex = aeLoadTexture( wave1nFile, aeTextureFlags::GenerateMips );
-    aeTexture2D grassTex = aeLoadTexture( grassFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
+    aeTexture2D gliderTex = aeLoadTexture2D( gliderFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
+    aeTexture2D wave1Tex = aeLoadTexture2D( wave1File, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
+    aeTexture2D wave1nTex = aeLoadTexture2D( wave1nFile, aeTextureFlags::GenerateMips );
+    aeTexture2D grassTex = aeLoadTexture2D( grassFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
     aeTexture2D sky1Tex = wave1Tex;
     aeTexture2D sky2Tex = wave1Tex;

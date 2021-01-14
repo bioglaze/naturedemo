@@ -72,7 +72,7 @@ static unsigned GetMipLevelCount( unsigned width, unsigned height )
     return (unsigned)floor( log2( fmax( width, height ) ) ) + 1;
 }
 
-aeTexture2D aeLoadTexture( const struct aeFile& file, unsigned flags )
+aeTexture2D aeLoadTexture2D( const struct aeFile& file, unsigned flags )
 {
     assert( textureCount < 100 );
 
