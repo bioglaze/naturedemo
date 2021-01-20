@@ -33,6 +33,11 @@ static aeTextureImpl textures[ 100 ];
 static int textureCount = 0;
 static VkCommandBuffer texCommandBuffer;
 
+static inline bool IsPowerOfTwo( unsigned i )
+{
+    return ((i & (i - 1)) == 0);
+}
+
 static void LoadTGA( const aeFile& file, unsigned& outWidth, unsigned& outHeight, unsigned &outDataBeginOffset, unsigned& outBitsPerPixel )
 {
     unsigned char* data = (unsigned char*)file.data;
@@ -285,5 +290,131 @@ aeTexture2D aeLoadTexture2D( const struct aeFile& file, unsigned flags )
         vkFreeMemory( gDevice, stagingMemories[ i ], nullptr );
     }
 
+    return outTexture;
+}
+
+static unsigned GetMemoryUsage( unsigned width, unsigned height, VkFormat format )
+{
+    if (format == VK_FORMAT_BC1_RGB_SRGB_BLOCK || format == VK_FORMAT_BC1_RGB_UNORM_BLOCK)
+    {
+        return (width * height * 4) / 8;
+    }
+    else if (format == VK_FORMAT_BC2_SRGB_BLOCK || format == VK_FORMAT_BC2_UNORM_BLOCK)
+    {
+        // TODO: Verify this!
+        return (width * height * 4) / 4;
+    }
+    else if (format == VK_FORMAT_BC3_SRGB_BLOCK || format == VK_FORMAT_BC3_UNORM_BLOCK)
+    {
+        // TODO: Verify this!
+        return (width * height * 4) / 4;
+    }
+    else if (format == VK_FORMAT_BC4_SNORM_BLOCK || format == VK_FORMAT_BC4_UNORM_BLOCK)
+    {
+        // TODO: Verify this!
+        return (width * height * 2) / 4;
+    }
+    else if (format == VK_FORMAT_BC5_SNORM_BLOCK || format == VK_FORMAT_BC5_UNORM_BLOCK)
+    {
+        // TODO: Verify this!
+        return (width * height * 4) / 4;
+    }
+
+    return width * height * 4;
+}
+
+static void CreateStaging( const aeTextureImpl& tex, VkFormat format, const aeFile files[ 6 ], unsigned face, VkBuffer buffers[ 6 ], VkDeviceMemory deviceMemories[ 6 ], unsigned bytesPerPixel, unsigned dataBeginOffset )
+{
+    const bool isDDS = format != VK_FORMAT_R8G8B8A8_SRGB;
+
+    const VkDeviceSize imageSize = GetMemoryUsage( tex.width, tex.height, format );
+    
+    VkBufferCreateInfo bufferCreateInfo = {};
+    bufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferCreateInfo.size = imageSize;
+    bufferCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    VK_CHECK( vkCreateBuffer( gDevice, &bufferCreateInfo, nullptr, &buffers[ face ] ) );
+
+    VkMemoryRequirements memReqs = {};
+    vkGetBufferMemoryRequirements( gDevice, buffers[ face ], &memReqs );
+
+    VkMemoryAllocateInfo memAllocInfo = {};
+    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memAllocInfo.allocationSize = memReqs.size;
+    memAllocInfo.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT );
+    VK_CHECK( vkAllocateMemory( gDevice, &memAllocInfo, nullptr, &deviceMemories[ face ] ) );
+    SetObjectName( gDevice, (uint64_t)deviceMemories[ face ], VK_OBJECT_TYPE_DEVICE_MEMORY, "texture staging" );
+
+    VK_CHECK( vkBindBufferMemory( gDevice, buffers[ face ], deviceMemories[ face ], 0 ) );
+
+    void* mapped;
+    VK_CHECK( vkMapMemory( gDevice, deviceMemories[ face ], 0, memReqs.size, 0, &mapped ) );
+
+    if (isDDS)
+    {
+        memcpy( mapped, &files[ face ].data[ dataBeginOffset ], memReqs.size );
+    }
+    else if (IsPowerOfTwo( tex.width ) && IsPowerOfTwo( tex.height ))
+    {
+        memcpy( mapped, &files[ face ].data[ dataBeginOffset ], tex.width * tex.height * bytesPerPixel );
+    }
+    else
+    {
+        assert( !"unhandled code" );
+    }
+
+    VkMappedMemoryRange flushRange = {};
+    flushRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    flushRange.memory = deviceMemories[ face ];
+    flushRange.offset = 0;
+    flushRange.size = VK_WHOLE_SIZE;
+    vkFlushMappedMemoryRanges( gDevice, 1, &flushRange );
+
+    vkUnmapMemory( gDevice, deviceMemories[ face ] );
+}
+
+aeTextureCube aeLoadTextureCube( const aeFile& negX, const aeFile& posX, const aeFile& negY, const aeFile& posY, const aeFile& negZ, const aeFile& posZ, unsigned flags )
+{
+    assert( textureCount < 100 );
+
+    if (texCommandBuffer == VK_NULL_HANDLE)
+    {
+        VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
+        commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        commandBufferAllocateInfo.commandPool = gCmdPool;
+        commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        commandBufferAllocateInfo.commandBufferCount = 1;
+
+        VK_CHECK( vkAllocateCommandBuffers( gDevice, &commandBufferAllocateInfo, &texCommandBuffer ) );
+        SetObjectName( gDevice, (uint64_t)texCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, "texCommandBuffer" );
+    }
+    
+    aeTextureCube outTexture;
+    outTexture.index = textureCount++;
+    assert( outTexture.index < textureCount );
+    aeTextureImpl& tex = textures[ outTexture.index ];
+
+    int bytesPerPixel = 4;
+    unsigned dataBeginOffset = 0;
+    unsigned mipLevelCount = 1;
+    VkFormat format = VK_FORMAT_B8G8R8A8_SRGB;
+
+    const char* paths[ 6 ] = { negX.path, posX.path, negY.path, posY.path, negZ.path, posZ.path };
+    const aeFile files[ 6 ] = { negX, posX, negY, posY, negZ, posZ };
+
+    for (unsigned face = 0; face < 6; ++face)
+    {
+        if (strstr( paths[ face ], ".tga" ) || strstr( paths[ face ], ".TGA" ))
+        {
+            unsigned bitsPerPixel = 32;
+            LoadTGA( files[ face ], tex.width, tex.height, dataBeginOffset, bitsPerPixel );
+            bytesPerPixel = bitsPerPixel / 8;
+        }
+        else
+        {
+            assert( !"Only .tga is supported!" );
+        }
+    }
     return outTexture;
 }

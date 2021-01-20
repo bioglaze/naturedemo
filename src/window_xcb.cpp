@@ -214,6 +214,7 @@ aeWindow aeCreateWindow( unsigned width, unsigned height, const char* title )
     xcb_icccm_set_wm_size_hints( outWindow.connection, outWindow.window, XCB_ATOM_WM_NORMAL_HINTS, &hints );
 
     xcb_change_property( outWindow.connection, XCB_PROP_MODE_REPLACE, outWindow.window, XCB_ATOM_WM_NAME, XCB_ATOM_STRING, 8, strlen( title ), title );
+    xcb_change_property( outWindow.connection, XCB_PROP_MODE_REPLACE, outWindow.window, XCB_ATOM_WM_CLASS, XCB_ATOM_STRING, 8, sizeof("Nature Demo""\0""Nature Demo"), "Nature Demo\0Nature Demo" );
 
     if (width == 0 && height == 0)
     {
