@@ -374,6 +374,53 @@ static void CreateStaging( const aeTextureImpl& tex, VkFormat format, const aeFi
     vkUnmapMemory( gDevice, deviceMemories[ face ] );
 }
 
+static void CreateBaseMip( aeTextureImpl& tex, VkFormat format, VkBuffer stagingBuffers[ 6 ], const char* debugName )
+{
+    VkImageCreateInfo imageCreateInfo = {};
+    imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageCreateInfo.arrayLayers = 6;
+    imageCreateInfo.extent = { tex.width, tex.height, 1 };
+    imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    imageCreateInfo.format = format;
+    imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageCreateInfo.mipLevels = 1;
+    imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+    VK_CHECK( vkCreateImage( gDevice, &imageCreateInfo, nullptr, &tex.image ) );
+    SetObjectName( gDevice, (uint64_t)tex.image, VK_OBJECT_TYPE_IMAGE, debugName );
+
+    VkMemoryRequirements memReqs;
+    vkGetImageMemoryRequirements( gDevice, tex.image, &memReqs );
+
+    VkMemoryAllocateInfo memAllocInfo = {};
+    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memAllocInfo.allocationSize = memReqs.size;
+    memAllocInfo.memoryTypeIndex = GetMemoryType( memReqs.memoryTypeBits, gDeviceMemoryProperties, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT );
+
+    VK_CHECK( vkAllocateMemory( gDevice, &memAllocInfo, nullptr, &tex.deviceMemory ) );
+    VK_CHECK( vkBindImageMemory( gDevice, tex.image, tex.deviceMemory, 0 ) );
+
+    SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, 0, 1, VK_PIPELINE_STAGE_TRANSFER_BIT );
+
+    for (unsigned face = 0; face < 6; ++face)
+    {
+        VkBufferImageCopy bufferCopyRegion = {};
+        bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        bufferCopyRegion.imageSubresource.mipLevel = 0;
+        bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+        bufferCopyRegion.imageSubresource.layerCount = 1;
+        bufferCopyRegion.imageExtent.width = tex.width;
+        bufferCopyRegion.imageExtent.height = tex.height;
+        bufferCopyRegion.imageExtent.depth = 1;
+    
+        vkCmdCopyBufferToImage( texCommandBuffer, stagingBuffers[ face ], tex.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion );
+    }
+}
+
 aeTextureCube aeLoadTextureCube( const aeFile& negX, const aeFile& posX, const aeFile& negY, const aeFile& posY, const aeFile& negZ, const aeFile& posZ, unsigned flags )
 {
     assert( textureCount < 100 );
@@ -389,7 +436,12 @@ aeTextureCube aeLoadTextureCube( const aeFile& negX, const aeFile& posX, const a
         VK_CHECK( vkAllocateCommandBuffers( gDevice, &commandBufferAllocateInfo, &texCommandBuffer ) );
         SetObjectName( gDevice, (uint64_t)texCommandBuffer, VK_OBJECT_TYPE_COMMAND_BUFFER, "texCommandBuffer" );
     }
-    
+
+    VkCommandBufferBeginInfo cmdBufInfo = {};
+    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+ 
+    VK_CHECK( vkBeginCommandBuffer( texCommandBuffer, &cmdBufInfo ) );
+
     aeTextureCube outTexture;
     outTexture.index = textureCount++;
     assert( outTexture.index < textureCount );
@@ -402,6 +454,8 @@ aeTextureCube aeLoadTextureCube( const aeFile& negX, const aeFile& posX, const a
 
     const char* paths[ 6 ] = { negX.path, posX.path, negY.path, posY.path, negZ.path, posZ.path };
     const aeFile files[ 6 ] = { negX, posX, negY, posY, negZ, posZ };
+    VkBuffer stagingBuffers[ 6 ] = {};
+    VkDeviceMemory deviceMemories[ 6 ] = {};
 
     for (unsigned face = 0; face < 6; ++face)
     {
@@ -410,11 +464,27 @@ aeTextureCube aeLoadTextureCube( const aeFile& negX, const aeFile& posX, const a
             unsigned bitsPerPixel = 32;
             LoadTGA( files[ face ], tex.width, tex.height, dataBeginOffset, bitsPerPixel );
             bytesPerPixel = bitsPerPixel / 8;
+            CreateStaging( tex, format, files, face, stagingBuffers, deviceMemories, bytesPerPixel, dataBeginOffset );
         }
         else
         {
             assert( !"Only .tga is supported!" );
         }
     }
+
+    CreateBaseMip( tex, format, stagingBuffers, "cube map" );
+
+    VK_CHECK( vkEndCommandBuffer( texCommandBuffer ) );
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &texCommandBuffer;
+
+    VK_CHECK( vkQueueSubmit( gGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE ) );
+
+    vkDeviceWaitIdle( gDevice );
+
     return outTexture;
 }
