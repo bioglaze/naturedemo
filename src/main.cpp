@@ -130,7 +130,13 @@ int main()
     aeFile planeFile = aeLoadFile( "plane.a3d" );
     aeFile terrainFile = aeLoadFile( "terrain.a3d" );
     aeFile grassFile = aeLoadFile( "grass.tga" );
-
+    aeFile leftFile = aeLoadFile( "left.tga" );
+    aeFile rightFile = aeLoadFile( "right.tga" );
+    aeFile bottomFile = aeLoadFile( "bottom.tga" );
+    aeFile topFile = aeLoadFile( "top.tga" );
+    aeFile frontFile = aeLoadFile( "front.tga" );
+    aeFile backFile = aeLoadFile( "back.tga" );
+    
     aeShader waterShader = aeCreateShader( waterVertFile, waterFragFile );
     aeShader skyShader = aeCreateShader( skyVertFile, skyFragFile );
     aeShader groundShader = aeCreateShader( groundVertFile, groundFragFile );
@@ -139,6 +145,8 @@ int main()
     aeTexture2D wave1nTex = aeLoadTexture2D( wave1nFile, aeTextureFlags::GenerateMips );
     aeTexture2D grassTex = aeLoadTexture2D( grassFile, aeTextureFlags::SRGB | aeTextureFlags::GenerateMips );
     //aeTexture2D noiseTex = aeLoadTexture( noiseFile, aeTextureFlags::SRGB );
+
+    aeTextureCube skyMap = aeLoadTextureCube( leftFile, rightFile, bottomFile, topFile, frontFile, backFile, 0 );
     aeTexture2D sky1Tex = wave1Tex;
     aeTexture2D sky2Tex = wave1Tex;
     aeMesh water = aeLoadMeshFile( planeFile );
