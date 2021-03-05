@@ -4,12 +4,12 @@ DEFINES := -DVK_USE_PLATFORM_XCB_KHR
 CC := clang++
 SANITIZERS := -g -fsanitize=address,undefined
 
-SHADER1 := "$(shell glslangValidator -D -V --target-env vulkan1.1 -S vert -e mainVS water.hlsl -o ../build/water_vs.spv)"
-SHADER2 := "$(shell glslangValidator -D -V --target-env vulkan1.1 -S frag -e mainFS water.hlsl -o ../build/water_fs.spv)"
-SHADER3 := "$(shell glslangValidator -D -V --target-env vulkan1.1 -S vert -e mainVS sky.hlsl -o ../build/sky_vs.spv)"
-SHADER4 := "$(shell glslangValidator -D -V --target-env vulkan1.1 -S frag -e mainFS sky.hlsl -o ../build/sky_fs.spv)"
-SHADER5 := "$(shell glslangValidator -D -V --target-env vulkan1.1 -S vert -e mainVS ground.hlsl -o ../build/ground_vs.spv)"
-SHADER6 := "$(shell glslangValidator -D -V --target-env vulkan1.1 -S frag -e mainFS ground.hlsl -o ../build/ground_fs.spv)"
+SHADER1 := "$(shell dxc -Ges -spirv -fspv-target-env=vulkan1.1 -E mainVS -all-resources-bound -T vs_6_0 water.hlsl -Fo ../build/water_vs.spv)"
+SHADER2 := "$(shell dxc -Ges -spirv -fspv-target-env=vulkan1.1 -E mainFS -all-resources-bound -T ps_6_0 water.hlsl -Fo ../build/water_fs.spv)"
+SHADER3 := "$(shell dxc -Ges -spirv -fspv-target-env=vulkan1.1 -E mainVS -all-resources-bound -T vs_6_0 sky.hlsl -Fo ../build/sky_vs.spv)"
+SHADER4 := "$(shell dxc -Ges -spirv -fspv-target-env=vulkan1.1 -E mainFS -all-resources-bound -T ps_6_0 sky.hlsl -Fo ../build/sky_fs.spv)"
+SHADER5 := "$(shell dxc -Ges -spirv -fspv-target-env=vulkan1.1 -E mainVS -all-resources-bound -T vs_6_0 ground.hlsl -Fo ../build/ground_vs.spv)"
+SHADER6 := "$(shell dxc -Ges -spirv -fspv-target-env=vulkan1.1 -E mainFS -all-resources-bound -T ps_6_0 ground.hlsl -Fo ../build/ground_fs.spv)"
 
 all:
 	echo $(SHADER1)

@@ -4,7 +4,7 @@ struct VSOutput
 {
     float4 pos : SV_Position;
     float2 uv : TEXCOORD;
-    float2 uv2 : TEXCOORD;
+    float2 uv2 : TEXCOORD1;
 };
 
 VSOutput mainVS( uint vertexId : SV_VertexID )
