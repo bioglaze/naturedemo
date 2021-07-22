@@ -7,7 +7,7 @@
   Testing water and sky rendering etc.
 
   Author: Timo Wiren
-  Modified: 2021-01-14
+  Modified: 2021-04-16
  */
 #include <stdio.h>
 #include <math.h>

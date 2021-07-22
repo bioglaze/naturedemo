@@ -257,11 +257,8 @@ aeTexture2D aeLoadTexture2D( const struct aeFile& file, unsigned flags )
 
         SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, i, 1, VK_PIPELINE_STAGE_TRANSFER_BIT );
         vkCmdBlitImage( texCommandBuffer, tex.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, tex.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR );
-        //SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, i, 1, VK_PIPELINE_STAGE_TRANSFER_BIT );
     }
 
-    //SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, mipLevelCount, VK_PIPELINE_STAGE_TRANSFER_BIT );
-    
     vkEndCommandBuffer( texCommandBuffer );
     VK_CHECK( vkQueueSubmit( gGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE ) );
 
@@ -274,7 +271,14 @@ aeTexture2D aeLoadTexture2D( const struct aeFile& file, unsigned flags )
         SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 1, i, 1, VK_PIPELINE_STAGE_TRANSFER_BIT );
     }
 
-    SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, mipLevelCount, VK_PIPELINE_STAGE_TRANSFER_BIT );
+    const int baseMip = mipLevelCount > 1 ? 1 : 0;
+    const int mipCount = mipLevelCount > 1 ? (mipLevelCount - 1) : mipLevelCount;
+    SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, baseMip, mipCount, VK_PIPELINE_STAGE_TRANSFER_BIT );
+
+    if (mipLevelCount > 1)
+    {
+        SetImageLayout( texCommandBuffer, tex.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1, 0, 1, VK_PIPELINE_STAGE_TRANSFER_BIT );
+    }
 
     vkEndCommandBuffer( texCommandBuffer );
     VK_CHECK( vkQueueSubmit( gGraphicsQueue, 1, &submitInfo, VK_NULL_HANDLE ) );
@@ -421,7 +425,7 @@ static void CreateBaseMip( aeTextureImpl& tex, VkFormat format, VkBuffer staging
     }
 }
 
-aeTextureCube aeLoadTextureCube( const aeFile& negX, const aeFile& posX, const aeFile& negY, const aeFile& posY, const aeFile& negZ, const aeFile& posZ, unsigned flags )
+aeTextureCube aeLoadTextureCube( const aeFile& negX, const aeFile& posX, const aeFile& negY, const aeFile& posY, const aeFile& negZ, const aeFile& posZ, unsigned /*flags*/ )
 {
     assert( textureCount < 100 );
 
@@ -449,7 +453,6 @@ aeTextureCube aeLoadTextureCube( const aeFile& negX, const aeFile& posX, const a
 
     int bytesPerPixel = 4;
     unsigned dataBeginOffset = 0;
-    unsigned mipLevelCount = 1;
     VkFormat format = VK_FORMAT_B8G8R8A8_SRGB;
 
     const char* paths[ 6 ] = { negX.path, posX.path, negY.path, posY.path, negZ.path, posZ.path };
