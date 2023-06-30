@@ -565,8 +565,8 @@ static void CreateInstance( VkInstance& outInstance )
 
     uint32_t extensionCount = 0;
     vkEnumerateInstanceExtensionProperties( nullptr, &extensionCount, nullptr );
-	assert( extensionCount < 20 );
-    VkExtensionProperties extensions[ 20 ];
+	assert( extensionCount <= 40 );
+    VkExtensionProperties extensions[ 40 ];
     vkEnumerateInstanceExtensionProperties( nullptr, &extensionCount, extensions );
     bool hasDebugUtils = false;
 
@@ -656,7 +656,7 @@ static bool CreateSwapchain( unsigned& width, unsigned& height, int presentInter
 
     uint32_t queueCount;
     vkGetPhysicalDeviceQueueFamilyProperties( gPhysicalDevice, &queueCount, nullptr );
-    assert( queueCount > 0 && queueCount < 5 && "None or more queues than buffers have elements! Increase element count." );
+    assert( queueCount > 0 && queueCount <= 5 && "None or more queues than buffers have elements! Increase element count." );
 
     VkQueueFamilyProperties queueProps[ 5 ];
     vkGetPhysicalDeviceQueueFamilyProperties( gPhysicalDevice, &queueCount, &queueProps[ 0 ] );

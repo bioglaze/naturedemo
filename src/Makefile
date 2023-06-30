@@ -1,7 +1,7 @@
 LINKER := *.o -ldl -lxcb -lxcb-ewmh -lxcb-keysyms -lxcb-icccm -lX11-xcb -lvulkan
 FLAGS := -std=c++14 -Wall -Wextra -Wshadow -Wunreachable-code -Wno-unused-function -pedantic -msse3
 DEFINES := -DVK_USE_PLATFORM_XCB_KHR
-CC := clang++
+CC := g++
 SANITIZERS := -g -fsanitize=address,undefined
 
 SHADER1 := "$(shell dxc -Ges -spirv -fspv-target-env=vulkan1.1 -E mainVS -all-resources-bound -T vs_6_0 water.hlsl -Fo ../build/water_vs.spv)"

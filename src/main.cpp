@@ -110,8 +110,8 @@ void TransformLookAt( Transform& transform, const Vec3& localPosition, const Vec
 
 int main()
 {
-    unsigned width = 1920;
-    unsigned height = 1080;
+    unsigned width = 1920/2;
+    unsigned height = 1080/2;
     
     aeWindow window = aeCreateWindow( width, height, "Nature Demo" );
     aeGetRenderArea( window, width, height );
